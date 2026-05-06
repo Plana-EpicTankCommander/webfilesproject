@@ -7,6 +7,7 @@
       <router-link to="/image" class="sidebar-link">🖼️ 图片</router-link>
       <router-link to="/sound" class="sidebar-link">🎵 声音</router-link>
       <router-link to="/status" class="sidebar-link">📊 状态</router-link>
+      <router-link to="/dev" class="sidebar-link">🛠️ 开发</router-link>
     </aside>
     <main>
       <router-view />

@@ -15,7 +15,7 @@
             :key="item.path"
             class="sidenav-item"
             :class="{ active: selectedFile === item.path }"
-            @click="loadContent(item.path)"
+            @click="loadContent(item)"
           >
             {{ item.displayName }}
           </div>
@@ -27,6 +27,9 @@
     <div class="content-area">
       <div v-if="loading" class="loading">加载中...</div>
       <div v-else-if="error" class="error">{{ error }}</div>
+      <div v-else-if="pdfUrl" class="pdf-container">
+        <iframe :src="pdfUrl" frameborder="0"></iframe>
+      </div>
       <article v-else-if="htmlContent" class="markdown-body" ref="articleRef" v-html="htmlContent"></article>
       <div v-else class="empty">请从左侧选择章节</div>
     </div>
@@ -36,7 +39,7 @@
 <script setup>
 import { ref, computed, onMounted } from 'vue'
 import { marked } from 'marked'
-import { listFiles, readTextFile, groupFiles, replaceMarkdownImageUrls } from '../services/contentSource'
+import { listFiles, readTextFile, groupFiles, replaceMarkdownImageUrls, getPdfUrl } from '../services/contentSource'
 
 marked.use({ breaks: true })
 
@@ -48,6 +51,7 @@ function preprocess(text) {
 
 const files = ref([])
 const selectedFile = ref('')
+const pdfUrl = ref('')
 const htmlContent = ref('')
 const loading = ref(false)
 const error = ref('')
@@ -68,26 +72,32 @@ const grouped = computed(() => {
   for (const g of groups) {
     map[g.title] = g.items.map(f => ({
       ...f,
-      displayName: f.name.replace(/\.md$/, '')
+      displayName: f.fileType === 'pdf' ? f.name.replace(/\.pdf$/i, '') : f.name.replace(/\.md$/, '')
     }))
   }
   return map
 })
 
-async function loadContent(path) {
-  if (!path) return
-  selectedFile.value = path
+async function loadContent(item) {
+  if (!item) return
+  selectedFile.value = item.path
   loading.value = true
   error.value = ''
   htmlContent.value = ''
+  pdfUrl.value = ''
   try {
-    const text = await readTextFile('novels', path)
-    let html = await marked.parse(preprocess(text), { breaks: true, gfm: true })
-    html = await replaceMarkdownImageUrls(html, path)
-    html = await resolveMusicMarkers(html)
-    htmlContent.value = html
-    // 等 DOM 更新后初始化音乐播放器
-    setTimeout(initMusicPlayers, 50)
+    if (item.fileType === 'pdf') {
+      // PDF 文件直接用 iframe 展示
+      pdfUrl.value = await getPdfUrl(item.path)
+    } else {
+      // Markdown 文件渲染为 HTML
+      const text = await readTextFile('novels', item.path)
+      let html = await marked.parse(preprocess(text), { breaks: true, gfm: true })
+      html = await replaceMarkdownImageUrls(html, item.path)
+      html = await resolveMusicMarkers(html)
+      htmlContent.value = html
+      setTimeout(initMusicPlayers, 50)
+    }
   } catch (e) {
     error.value = '加载失败：' + e.message
   } finally {
@@ -101,7 +111,6 @@ async function resolveMusicMarkers(html) {
   const matches = [...html.matchAll(musicRegex)]
   if (matches.length === 0) return html
 
-  // 获取音乐文件列表
   let musicFiles = []
   try {
     musicFiles = await listFiles('musics')
@@ -115,17 +124,13 @@ async function resolveMusicMarkers(html) {
     const fullMatch = match[0]
     const filename = match[1]
     const customTitle = match[2]
-
-    // 在音乐列表里找对应文件
     const musicFile = musicFiles.find(f => f.name === filename)
     if (!musicFile) continue
 
-    // 构造 raw.githubusercontent.com URL（文件名需要 encode）
     const encodedPath = musicFile.path.split('/').map(p => encodeURIComponent(p)).join('/')
     const url = `https://raw.githubusercontent.com/Plana-EpicTankCommander/musicpage/main/${encodedPath}`
     const title = customTitle || filename.replace('.mp3', '')
 
-    // 替换为音频播放器 HTML
     const playerHtml = `
       <div class="inline-player-container" data-src="${url}" data-title="${title}">
         <div class="ip-info"><h3>${title}</h3></div>
@@ -303,8 +308,9 @@ function initMusicPlayers() {
 }
 
 .category-label {
-  font-size: 0.75rem;
-  color: #666;
+  font-size: 1rem;
+  color: #aaa;
+  font-family: '宋体', 'SimSun', serif;
   padding: 0.3rem 0.8rem;
 }
 
@@ -530,6 +536,24 @@ function initMusicPlayers() {
   background: #1a73e8;
   border-radius: 50%;
   cursor: pointer;
+}
+
+.pdf-container {
+  width: 100%;
+  max-width: 900px;
+  margin: 0.5rem auto 0;
+  padding: 0 1rem 1rem;
+  box-sizing: border-box;
+}
+
+.pdf-container iframe {
+  width: 100%;
+  height: calc(100vh - 100px);
+  min-height: 600px;
+  border: none;
+  border-radius: 8px;
+  box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+  background: #fff;
 }
 
 .ip-volume-value {

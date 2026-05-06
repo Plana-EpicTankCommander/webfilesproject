@@ -35,7 +35,8 @@ const MIME_TYPES = {
   mp3: 'audio/mpeg',
   wav: 'audio/wav',
   ogg: 'audio/ogg',
-  md: 'text/markdown;charset=utf-8'
+  md: 'text/markdown;charset=utf-8',
+  pdf: 'application/pdf'
 }
 
 function guessMimeType(path) {
@@ -176,28 +177,61 @@ async function listFiles(section) {
     return listCache[section].data
   }
 
-  const path = config.baseDir
-  const url = `${GITHUB_API}/repos/${config.owner}/${config.repo}/contents/${path}`
-  const res = await fetch(url, {
-    headers: { 'Accept': 'application/vnd.github.v3+json' }
-  })
-  if (!res.ok) {
-    if (res.status === 403) throw new Error('API 请求次数超限，请稍后再试')
-    throw new Error(`请求失败: ${res.status}`)
+  let result = []
+  if (section === 'novels') {
+    // 递归获取所有子目录里的 .md 文件
+    result = await fetchDirRecursive(config.owner, config.repo, config.branch, config.baseDir)
+  } else {
+    const path = config.baseDir
+    const url = `${GITHUB_API}/repos/${config.owner}/${config.repo}/contents/${path}`
+    const res = await fetch(url, {
+      headers: { 'Accept': 'application/vnd.github.v3+json' }
+    })
+    if (!res.ok) {
+      if (res.status === 403) throw new Error('API 请求次数超限，请稍后再试')
+      throw new Error(`请求失败: ${res.status}`)
+    }
+    const data = await res.json()
+    if (!Array.isArray(data)) return []
+    result = data.filter(f => {
+      if (f.type !== 'file') return false
+      if (section === 'images') return /\.(png|jpg|jpeg|gif|webp)$/i.test(f.name) && f.name !== 'README.md'
+      if (section === 'musics') return f.name.endsWith('.mp3')
+      if (section === 'pdfs') return f.name.toLowerCase().endsWith('.pdf')
+      return false
+    })
   }
-  const data = await res.json()
-  if (!Array.isArray(data)) return []
-  const result = data.filter(f => {
-    if (f.type !== 'file') return false
-    if (section === 'novels') return f.name.endsWith('.md') && f.name !== 'README.md'
-    if (section === 'images') return /\.(png|jpg|jpeg|gif|webp)$/i.test(f.name) && f.name !== 'README.md'
-    if (section === 'musics') return f.name.endsWith('.mp3')
-    return false
-  })
 
   // 写入缓存
   listCache[section] = { data: result, ts: now }
   return result
+}
+
+// 递归获取目录下所有文件，返回带上 folder 信息
+async function fetchDirRecursive(owner, repo, branch, path, basePath = '') {
+  const url = `${GITHUB_API}/repos/${owner}/${repo}/contents/${path}`
+  const res = await fetch(url, {
+    headers: { 'Accept': 'application/vnd.github.v3+json' }
+  })
+  if (!res.ok) return []
+  const data = await res.json()
+  if (!Array.isArray(data)) return []
+
+  const files = []
+  for (const item of data) {
+    if (item.type === 'file' && item.name !== 'README.md') {
+      const isMd = item.name.endsWith('.md')
+      const isPdf = item.name.toLowerCase().endsWith('.pdf')
+      if (!isMd && !isPdf) continue
+      const relativePath = item.path.replace(/^novels\//, '')
+      const folder = relativePath.includes('/') ? relativePath.split('/')[0] : ''
+      files.push({ ...item, folder, fileType: isMd ? 'md' : 'pdf' })
+    } else if (item.type === 'dir') {
+      const subFiles = await fetchDirRecursive(owner, repo, branch, item.path, item.path)
+      files.push(...subFiles)
+    }
+  }
+  return files
 }
 
 // 用 raw.githubusercontent.com 读取文本
@@ -221,14 +255,20 @@ export async function getMusicUrl(section, path) {
   return `${GITHUB_RAW}/${config.owner}/${config.repo}/${config.branch}/${path}`
 }
 
+export async function getPdfUrl(path) {
+  const encodedPath = path.split('/').map(p => encodeURIComponent(p)).join('/')
+  const rawUrl = `${GITHUB_RAW}/Plana-EpicTankCommander/sth_ineed/main/${encodedPath}`
+  // 用 PDF.js viewer（任何浏览器都支持）
+  return `https://mozilla.github.io/pdf.js/web/viewer.html?file=${encodeURIComponent(rawUrl)}`
+}
+
 export function groupFiles(files, section) {
   const groups = {}
   for (const f of files) {
     let groupName
     if (section === 'novels') {
-      const name = f.name.replace(/\.md$/, '')
-      const parts = name.split('-')
-      groupName = parts.length > 2 ? parts.slice(0, -1).join('-') : parts[0]
+      // 按子文件夹归类，folder 为空说明在根目录
+      groupName = f.folder || '根目录'
     } else if (section === 'images') {
       const parts = f.name.split('-')
       groupName = parts.length > 1 ? parts[0] : '其他'

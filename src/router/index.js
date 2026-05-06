@@ -4,6 +4,7 @@ import Article from '../views/Article.vue'
 import Image from '../views/Image.vue'
 import Sound from '../views/Sound.vue'
 import Status from '../views/Status.vue'
+import Dev from '../views/Dev.vue'
 
 const routes = [
   {
@@ -30,6 +31,11 @@ const routes = [
     path: '/status',
     name: 'Status',
     component: Status
+  },
+  {
+    path: '/dev',
+    name: 'Dev',
+    component: Dev
   }
 ]
 
