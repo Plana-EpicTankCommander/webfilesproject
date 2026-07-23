@@ -129,6 +129,7 @@ function convertGitHubBlobToRaw(url) {
 }
 
 // 替换 markdown HTML 中的图片 URL
+// 支持尺寸参数语法：![](图片.png =50) 表示图片宽度为 50%
 async function replaceMarkdownImageUrls(html, markdownPath) {
   const imgRegex = /<img\b[^>]*src="([^"]*)"[^>]*>/g
   const matches = [...html.matchAll(imgRegex)]
@@ -136,32 +137,50 @@ async function replaceMarkdownImageUrls(html, markdownPath) {
 
   let result = html
   for (const match of matches) {
-    const imgUrl = decodeURIComponent(match[1])  // marked 会把中文 URL 编码，需要先解码
+    const imgUrl = decodeURIComponent(match[1])
+
+    // 解析尺寸参数：图片路径尾部 =数字 表示宽度百分比
+    let sizePercent = null
+    let cleanUrl = imgUrl
+    const sizeMatch = imgUrl.match(/^(.+?)\s*=\s*(\d{1,3})$/)
+    if (sizeMatch) {
+      const pct = parseInt(sizeMatch[2])
+      if (pct >= 1 && pct <= 150) {
+        sizePercent = pct
+        cleanUrl = sizeMatch[1].trim()
+      }
+    }
+
+    let newUrl = null
 
     // 先尝试直接转换绝对 GitHub blob URL
-    const rawUrl = convertGitHubBlobToRaw(imgUrl)
+    const rawUrl = convertGitHubBlobToRaw(cleanUrl)
     if (rawUrl) {
-      result = result.replace(match[1], rawUrl)
-      continue
+      newUrl = rawUrl
+    } else {
+      // 再尝试相对路径
+      const repoPath = resolveMarkdownAssetRepoPath(markdownPath, cleanUrl)
+      if (!repoPath) continue
+      let section = resolveSectionFromRepoPath(repoPath)
+      let filePath = section ? stripBaseDir(section, repoPath) : repoPath
+
+      // 如果图片在小说目录下（相对路径如 "图片.png"），改为从 images/ 目录查找
+      if (section === 'novels' || (!section && repoPath && repoPath.split('/').length <= 2)) {
+        section = 'images'
+        filePath = cleanUrl.split('/').pop()
+      }
+
+      if (!section || !filePath) continue
+      newUrl = await getImageUrl(section, filePath)
     }
 
-    // 再尝试相对路径
-    const repoPath = resolveMarkdownAssetRepoPath(markdownPath, imgUrl)
-    if (!repoPath) continue
-    let section = resolveSectionFromRepoPath(repoPath)
-    let filePath = section ? stripBaseDir(section, repoPath) : repoPath
-
-    // 如果图片在小说目录下（相对路径如 "图片.png"），改为从 images/ 目录查找
-    // 条件：section 是 novels，或者 section 为 null 且路径段数<=2（即 "文件名.jpg" 或 "novels/文件名.jpg"）
-    if (section === 'novels' || (!section && repoPath && repoPath.split('/').length <= 2)) {
-      section = 'images'
-      // 用文件名本身，不要完整路径
-      filePath = imgUrl.split('/').pop()
+    // 替换整个 img 标签
+    let oldTag = match[0]
+    let newTag = oldTag.replace(match[1], newUrl)
+    if (sizePercent !== null) {
+      newTag = newTag.replace('<img', `<img style="max-width:${sizePercent}%"`)
     }
-
-    if (!section || !filePath) continue
-    const newUrl = await getImageUrl(section, filePath)
-    result = result.replace(match[1], newUrl)
+    result = result.replace(oldTag, newTag)
   }
   return result
 }
