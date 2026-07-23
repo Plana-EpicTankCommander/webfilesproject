@@ -129,7 +129,7 @@ function convertGitHubBlobToRaw(url) {
 }
 
 // 替换 markdown HTML 中的图片 URL
-// 支持尺寸参数语法：![](图片.png =50) 表示图片宽度为 50%
+// 支持尺寸参数语法：![](图片.png?w=50) 表示图片宽度为 50%
 async function replaceMarkdownImageUrls(html, markdownPath) {
   const imgRegex = /<img\b[^>]*src="([^"]*)"[^>]*>/g
   const matches = [...html.matchAll(imgRegex)]
@@ -139,15 +139,15 @@ async function replaceMarkdownImageUrls(html, markdownPath) {
   for (const match of matches) {
     const imgUrl = decodeURIComponent(match[1])
 
-    // 解析尺寸参数：图片路径尾部 =数字 表示宽度百分比
+    // 解析尺寸参数：图片路径尾部 ?w=数字 表示宽度百分比
     let sizePercent = null
     let cleanUrl = imgUrl
-    const sizeMatch = imgUrl.match(/^(.+?)\s*=\s*(\d{1,3})$/)
+    const sizeMatch = imgUrl.match(/^(.+?)\?w=(\d{1,3})$/)
     if (sizeMatch) {
       const pct = parseInt(sizeMatch[2])
       if (pct >= 1 && pct <= 150) {
         sizePercent = pct
-        cleanUrl = sizeMatch[1].trim()
+        cleanUrl = sizeMatch[1]
       }
     }
 
