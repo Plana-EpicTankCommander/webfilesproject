@@ -57,9 +57,10 @@
 </template>
 
 <script setup>
-import { ref, computed, onMounted } from 'vue'
+import { ref, computed, onMounted, onUnmounted, nextTick, createApp } from 'vue'
 import { marked } from 'marked'
-import { listFiles, readTextFile, groupFiles, replaceMarkdownImageUrls, getPdfUrl } from '../services/contentSource'
+import ImageCanvas from '../components/ImageCanvas/ImageCanvas.vue'
+import { listFiles, readTextFile, groupFiles, replaceMarkdownImageUrls, resolveCanvasMarkers, getPdfUrl } from '../services/contentSource'
 
 marked.use({ breaks: true })
 
@@ -100,8 +101,40 @@ const grouped = computed(() => {
   return map
 })
 
+// 文章里的画布查看器实例（v-html 里无法直接写组件，只能手动挂载）
+const canvasApps = []
+
+function mountCanvasViewers() {
+  if (!articleRef.value) return
+  articleRef.value.querySelectorAll('.image-canvas-host').forEach(host => {
+    if (!host.dataset.canvasSrc) return
+    const app = createApp(ImageCanvas, {
+      src: host.dataset.canvasSrc,
+      alt: host.dataset.canvasAlt || '',
+      height: host.dataset.canvasHeight || '420px',
+      fitMode: host.dataset.canvasFit || 'contain'
+    })
+    app.mount(host)
+    canvasApps.push(app)
+  })
+}
+
+function destroyCanvasViewers() {
+  while (canvasApps.length) {
+    const app = canvasApps.pop()
+    try {
+      app.unmount()
+    } catch (e) {
+      console.warn('画布卸载失败:', e)
+    }
+  }
+}
+
+onUnmounted(destroyCanvasViewers)
+
 async function loadContent(item) {
   if (!item) return
+  destroyCanvasViewers()
   selectedFile.value = item.path
   loading.value = true
   error.value = ''
@@ -116,14 +149,17 @@ async function loadContent(item) {
       const text = await readTextFile('novels', item.path)
       let html = await marked.parse(preprocess(text), { breaks: true, gfm: true })
       html = await replaceMarkdownImageUrls(html, item.path)
+      html = await resolveCanvasMarkers(html, item.path)
       html = await resolveMusicMarkers(html)
       htmlContent.value = html
-      
-      // 提取文章目录
-      setTimeout(() => {
-        parseArticleToc()
-        initMusicPlayers()
-      }, 50)
+      // 先结束 loading，article 才会被渲染出来，之后才能拿到 DOM 初始化嵌入内容
+      loading.value = false
+      await nextTick()
+
+      // 解析文章目录并初始化嵌入内容
+      parseArticleToc()
+      initMusicPlayers()
+      mountCanvasViewers()
     }
   } catch (e) {
     error.value = '加载失败：' + e.message

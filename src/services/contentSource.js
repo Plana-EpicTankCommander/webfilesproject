@@ -128,6 +128,38 @@ function convertGitHubBlobToRaw(url) {
   return null // 不是 blob URL 或不是 github.com
 }
 
+// 把 markdown 里引用的图片路径解析成可访问的 URL
+// 规则：GitHub blob 链接转 raw 直链；外部 URL 原样保留；相对路径优先去 images/ 目录找
+async function resolveImageAssetUrl(markdownPath, assetUrl) {
+  const trimmed = (assetUrl || '').trim()
+  if (!trimmed) return null
+
+  // 先尝试直接转换绝对 GitHub blob URL
+  const rawUrl = convertGitHubBlobToRaw(trimmed)
+  if (rawUrl) return rawUrl
+
+  // 外部链接保持不变
+  if (/^https?:\/\//i.test(trimmed)) return trimmed
+
+  // 锚点、data URI、协议相对地址不处理
+  if (trimmed.startsWith('#') || trimmed.startsWith('data:') || trimmed.startsWith('//')) return null
+
+  // 再尝试相对路径
+  const repoPath = resolveMarkdownAssetRepoPath(markdownPath, trimmed)
+  if (!repoPath) return null
+  let section = resolveSectionFromRepoPath(repoPath)
+  let filePath = section ? stripBaseDir(section, repoPath) : repoPath
+
+  // 如果图片在小说目录下（相对路径如 "图片.png"），改为从 images/ 目录查找
+  if (section === 'novels' || (!section && repoPath.split('/').length <= 2)) {
+    section = 'images'
+    filePath = trimmed.split('/').pop()
+  }
+
+  if (!section || !filePath) return null
+  return getImageUrl(section, filePath)
+}
+
 // 替换 markdown HTML 中的图片 URL
 // 支持尺寸参数语法：![](图片.png?w=50) 表示图片宽度为 50%
 async function replaceMarkdownImageUrls(html, markdownPath) {
@@ -137,50 +169,98 @@ async function replaceMarkdownImageUrls(html, markdownPath) {
 
   let result = html
   for (const match of matches) {
-    const imgUrl = decodeURIComponent(match[1])
+    // 非法转义不应让整篇文章加载失败
+    let imgUrl = match[1]
+    try {
+      imgUrl = decodeURIComponent(match[1])
+    } catch {
+      imgUrl = match[1]
+    }
 
     // 解析尺寸参数：图片路径尾部 ?w=数字 表示宽度百分比
     let sizePercent = null
     let cleanUrl = imgUrl
     const sizeMatch = imgUrl.match(/^(.+?)\?w=(\d{1,3})$/)
     if (sizeMatch) {
-      const pct = parseInt(sizeMatch[2])
+      const pct = parseInt(sizeMatch[2], 10)
       if (pct >= 1 && pct <= 150) {
         sizePercent = pct
         cleanUrl = sizeMatch[1]
       }
     }
 
-    let newUrl = null
-
-    // 先尝试直接转换绝对 GitHub blob URL
-    const rawUrl = convertGitHubBlobToRaw(cleanUrl)
-    if (rawUrl) {
-      newUrl = rawUrl
-    } else {
-      // 再尝试相对路径
-      const repoPath = resolveMarkdownAssetRepoPath(markdownPath, cleanUrl)
-      if (!repoPath) continue
-      let section = resolveSectionFromRepoPath(repoPath)
-      let filePath = section ? stripBaseDir(section, repoPath) : repoPath
-
-      // 如果图片在小说目录下（相对路径如 "图片.png"），改为从 images/ 目录查找
-      if (section === 'novels' || (!section && repoPath && repoPath.split('/').length <= 2)) {
-        section = 'images'
-        filePath = cleanUrl.split('/').pop()
-      }
-
-      if (!section || !filePath) continue
-      newUrl = await getImageUrl(section, filePath)
-    }
+    const newUrl = await resolveImageAssetUrl(markdownPath, cleanUrl)
+    if (!newUrl) continue
 
     // 替换整个 img 标签
-    let oldTag = match[0]
+    const oldTag = match[0]
     let newTag = oldTag.replace(match[1], newUrl)
     if (sizePercent !== null) {
       newTag = newTag.replace('<img', `<img style="max-width:${sizePercent}%"`)
     }
     result = result.replace(oldTag, newTag)
+  }
+  return result
+}
+
+// ---------- 画布图片标记：[canvas:图片.png;h:520;w:80;fit:cover;title:说明] ----------
+
+const CANVAS_MARKER_RE = /\[canvas:([^\]]+)\]/g
+
+function escapeHtmlAttribute(value) {
+  return String(value)
+    .replace(/&/g, '&amp;')
+    .replace(/"/g, '&quot;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+}
+
+function parseCanvasMarker(content) {
+  const parts = content.split(';')
+  const file = parts[0].trim()
+  if (!file) return null
+
+  const options = {}
+  for (const part of parts.slice(1)) {
+    const index = part.indexOf(':')
+    if (index <= 0) continue
+    options[part.slice(0, index).trim().toLowerCase()] = part.slice(index + 1).trim()
+  }
+
+  const parsedWidth = parseInt(options.w, 10)
+  const parsedHeight = parseInt(options.h, 10)
+
+  return {
+    file,
+    width: Number.isFinite(parsedWidth) ? Math.min(100, Math.max(20, parsedWidth)) : 100,
+    height: Number.isFinite(parsedHeight) ? Math.min(1200, Math.max(160, parsedHeight)) : 420,
+    fit: options.fit === 'cover' ? 'cover' : 'contain',
+    alt: options.title || file.split('/').pop()
+  }
+}
+
+// 把 [canvas:...] 标记替换成占位 div，交给 Article 页面挂载 ImageCanvas 组件
+export async function resolveCanvasMarkers(html, markdownPath) {
+  const matches = [...html.matchAll(CANVAS_MARKER_RE)]
+  if (matches.length === 0) return html
+
+  let result = html
+  for (const match of matches) {
+    const marker = parseCanvasMarker(match[1])
+    if (!marker) continue
+
+    const url = await resolveImageAssetUrl(markdownPath, marker.file)
+    if (!url) continue
+
+    const host = `<div class="image-canvas-host"`
+      + ` style="width:${marker.width}%;margin:1rem auto;"`
+      + ` data-canvas-src="${escapeHtmlAttribute(url)}"`
+      + ` data-canvas-height="${marker.height}px"`
+      + ` data-canvas-fit="${marker.fit}"`
+      + ` data-canvas-alt="${escapeHtmlAttribute(marker.alt)}"`
+      + `></div>`
+
+    result = result.replace(match[0], () => host)
   }
   return result
 }

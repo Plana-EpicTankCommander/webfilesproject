@@ -28,7 +28,11 @@
       <div v-if="loading" class="loading">加载中...</div>
       <div v-else-if="error" class="error">{{ error }}</div>
       <div v-else-if="previewItem" class="image-container">
-        <img :src="previewItem.proxyUrl" :alt="previewItem.displayName" />
+        <ImageCanvas
+          :src="previewItem.proxyUrl"
+          :alt="previewItem.displayName"
+          height="calc(100vh - 220px)"
+        />
       </div>
       <div v-else class="empty">请从左侧选择图片</div>
     </div>
@@ -37,6 +41,7 @@
 
 <script setup>
 import { ref, computed, onMounted } from 'vue'
+import ImageCanvas from '../components/ImageCanvas/ImageCanvas.vue'
 import { listFiles, getImageUrl, groupFiles } from '../services/contentSource'
 
 const files = ref([])
@@ -184,17 +189,15 @@ async function preview(item) {
   display: flex;
   align-items: flex-start;
   justify-content: center;
-  min-height: 60vh;
+  min-height: 50vh;
   width: 100%;
+  max-width: 1200px;
+  margin: 0 auto;
   box-sizing: border-box;
-  padding: 4rem 2rem;
+  padding: 2rem;
 }
 
-.image-container img {
-  max-width: 100%;
-  max-height: calc(100vh - 200px);
-  object-fit: contain;
-  border-radius: 8px;
-  box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+.image-container :deep(.image-canvas) {
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
 }
 </style>

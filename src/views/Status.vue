@@ -104,6 +104,23 @@
           </ol>
         </div>
       </div>
+
+      <div class="guide-section">
+        <div class="guide-title">🖼️ 画布图片（可缩放 / 平移）</div>
+        <div class="guide-content">
+          <p>在文章中写画布标记，图片会显示在一张固定大小的画布里，可滚轮缩放、拖动平移，且始终不会超出画布范围：</p>
+          <code>[canvas:图片名.png]</code>
+          <p>可选参数（用 <code>;</code> 分隔）：</p>
+          <code>[canvas:图片名.png;h:520;w:80;fit:cover;title:说明文字]</code>
+          <ul>
+            <li><code>h</code>：画布高度（px，默认 420，范围 160~1200）</li>
+            <li><code>w</code>：画布宽度百分比（默认 100，范围 20~100）</li>
+            <li><code>fit:cover</code>：铺满画布并裁切；默认 <code>contain</code> 完整显示整张图</li>
+            <li><code>title</code>：图片替代文字</li>
+          </ul>
+          <p>图片同样从 <code>images/</code> 目录读取，也支持 GitHub blob 链接和外部 URL。</p>
+        </div>
+      </div>
     </div>
   </div>
 </template>
@@ -355,6 +372,11 @@ h2 {
 }
 
 .guide-content ol {
+  margin: 0.3rem 0 0 1.2rem;
+  padding-left: 0.5rem;
+}
+
+.guide-content ul {
   margin: 0.3rem 0 0 1.2rem;
   padding-left: 0.5rem;
 }
