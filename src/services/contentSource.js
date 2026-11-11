@@ -363,11 +363,6 @@ export function getPdfRawUrl(path) {
   return `${GITHUB_RAW}/Plana-EpicTankCommander/sth_ineed/main/${encodedPath}`
 }
 
-export async function getPdfUrl(path) {
-  // 用 PDF.js viewer（任何浏览器都支持）
-  return `https://mozilla.github.io/pdf.js/web/viewer.html?file=${encodeURIComponent(getPdfRawUrl(path))}`
-}
-
 // 栏目图片直链（供画廊 / 首页使用）
 export function itemImageUrl(item) {
   return getImageUrl('images', item.path.replace(/^images\//, ''))

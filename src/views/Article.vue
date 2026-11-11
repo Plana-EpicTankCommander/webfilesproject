@@ -47,6 +47,10 @@
           <div v-else-if="error" class="notice notice-error">
             <Icon name="alert" :size="18" />
             <span class="err-text">{{ error }}</span>
+            <a v-if="pdfRawUrl" class="btn btn-sm" :href="pdfRawUrl" target="_blank" rel="noreferrer">
+              <Icon name="download" :size="14" />
+              下载 PDF
+            </a>
             <button type="button" class="btn btn-sm" @click="retry">
               <Icon name="refresh" :size="14" />
               重试
@@ -62,8 +66,8 @@
               </span>
               <span class="pdf-name">{{ currentTitle }}</span>
               <a class="section-link" :href="pdfRawUrl" target="_blank" rel="noreferrer">
-                新窗口打开
-                <Icon name="external" :size="13" />
+                <Icon name="download" :size="13" />
+                下载
               </a>
             </div>
             <div class="pdf-frame card">
@@ -164,7 +168,6 @@ import {
   groupFiles,
   replaceMarkdownImageUrls,
   resolveCanvasMarkers,
-  getPdfUrl,
   getPdfRawUrl
 } from '../services/contentSource'
 
@@ -195,6 +198,7 @@ const fontSize = ref(readFontSize())
 const drawer = ref('')
 
 const mountedApps = []
+let pdfObjectUrl = ''
 
 const flatIndex = computed(() => flatItems.value.findIndex((item) => item.path === selectedPath.value))
 const currentItem = computed(() => (flatIndex.value >= 0 ? flatItems.value[flatIndex.value] : null))
@@ -239,6 +243,7 @@ onUnmounted(() => {
   window.removeEventListener('scroll', onScroll)
   window.removeEventListener('resize', onScroll)
   destroyEmbeds()
+  revokePdf()
   if (scrollRaf) cancelAnimationFrame(scrollRaf)
 })
 
@@ -288,6 +293,7 @@ function remember(path) {
 async function loadContent(item, scroll = true) {
   if (!item) return
   destroyEmbeds()
+  revokePdf()
   selectedPath.value = item.path
   remember(item.path)
   loading.value = true
@@ -301,8 +307,7 @@ async function loadContent(item, scroll = true) {
 
   try {
     if (item.fileType === 'pdf') {
-      pdfUrl.value = await getPdfUrl(item.path)
-      pdfRawUrl.value = getPdfRawUrl(item.path)
+      await loadPdf(item)
       loading.value = false
       if (scroll) window.scrollTo({ top: 0, behavior: 'auto' })
       return
@@ -329,6 +334,28 @@ async function loadContent(item, scroll = true) {
     loading.value = false
     listLoading.value = false
   }
+}
+
+// ---------- PDF ----------
+
+function revokePdf() {
+  if (pdfObjectUrl) {
+    URL.revokeObjectURL(pdfObjectUrl)
+    pdfObjectUrl = ''
+  }
+}
+
+// GitHub raw 把 PDF 当成 application/octet-stream 返回，直接塞进 iframe 只会触发下载；
+// 这里自己取回二进制、包成 application/pdf 的 blob，再交给浏览器内置阅读器渲染。
+async function loadPdf(item) {
+  const raw = getPdfRawUrl(item.path)
+  pdfRawUrl.value = raw
+  const res = await fetch(raw)
+  if (!res.ok) throw new Error(`PDF 请求失败：${res.status}`)
+  const buffer = await res.arrayBuffer()
+  revokePdf()
+  pdfObjectUrl = URL.createObjectURL(new Blob([buffer], { type: 'application/pdf' }))
+  pdfUrl.value = pdfObjectUrl
 }
 
 // ---------- 音乐标记 ----------
