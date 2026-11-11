@@ -22,8 +22,11 @@
             <dt>仓库</dt>
             <dd>
               <a :href="source.url" target="_blank" rel="noreferrer">
-                {{ source.repo }}
-                <Icon name="external" :size="12" />
+                <span class="repo-owner">{{ source.owner }}/</span>
+                <span class="repo-name">
+                  {{ source.repoName }}
+                  <Icon name="external" :size="12" />
+                </span>
               </a>
             </dd>
           </div>
@@ -137,7 +140,8 @@ const sources = [
     key: 'novels',
     label: '文章',
     icon: 'book',
-    repo: `${owner}/${REPO_CONFIG.novels.repo}`,
+    owner,
+    repoName: REPO_CONFIG.novels.repo,
     dir: REPO_CONFIG.novels.baseDir,
     url: `https://github.com/${owner}/${REPO_CONFIG.novels.repo}`
   },
@@ -145,7 +149,8 @@ const sources = [
     key: 'images',
     label: '图片',
     icon: 'image',
-    repo: `${owner}/${REPO_CONFIG.images.repo}`,
+    owner,
+    repoName: REPO_CONFIG.images.repo,
     dir: REPO_CONFIG.images.baseDir,
     url: `https://github.com/${owner}/${REPO_CONFIG.images.repo}`
   },
@@ -153,7 +158,8 @@ const sources = [
     key: 'musics',
     label: '音乐',
     icon: 'music',
-    repo: `${owner}/${REPO_CONFIG.musics.repo}`,
+    owner,
+    repoName: REPO_CONFIG.musics.repo,
     dir: REPO_CONFIG.musics.baseDir,
     url: `https://github.com/${owner}/${REPO_CONFIG.musics.repo}`
   }
@@ -275,7 +281,20 @@ async function test(key) {
 .meta-row a {
   display: inline-flex;
   align-items: center;
-  gap: 4px;
+  flex-wrap: wrap;
+  gap: 2px;
+  color: var(--accent-ink);
+}
+
+.repo-owner {
+  color: var(--ink-faint);
+}
+
+.repo-name {
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+  font-weight: 600;
   color: var(--accent-ink);
 }
 
