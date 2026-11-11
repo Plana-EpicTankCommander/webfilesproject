@@ -26,10 +26,6 @@
           <div class="toolbar-actions">
             <button type="button" class="aa-btn" aria-label="缩小字号" :disabled="fontSize <= 15" @click="adjustFont(-1)">A−</button>
             <button type="button" class="aa-btn" aria-label="放大字号" :disabled="fontSize >= 21" @click="adjustFont(1)">A+</button>
-            <button type="button" class="btn btn-ghost btn-sm toc-btn" @click="openDrawer('toc')">
-              <Icon name="list" :size="16" />
-              目录
-            </button>
           </div>
         </div>
         <div class="read-progress" aria-hidden="true"><i :style="{ width: readingProgress + '%' }" /></div>
@@ -114,41 +110,38 @@
             </button>
           </nav>
         </div>
-
-        <aside v-if="articleToc.length" class="toc-rail">
-          <ArticleToc :items="articleToc" :active-id="activeHeadingId" @navigate="scrollToHeading" />
-        </aside>
       </div>
     </div>
 
-    <!-- 移动端抽屉 -->
+    <!-- 移动端章节抽屉 -->
     <transition name="fade">
       <div v-if="drawer" class="drawer-backdrop" @click.self="drawer = false">
         <div class="drawer">
           <div class="drawer-head">
-            <span>{{ drawer === 'chapters' ? '章节目录' : '本页目录' }}</span>
+            <span>章节目录</span>
             <button type="button" class="btn-icon" aria-label="关闭" @click="drawer = false">
               <Icon name="close" :size="18" />
             </button>
           </div>
           <div class="drawer-body">
             <ChapterTree
-              v-if="drawer === 'chapters'"
               :groups="groups"
               :selected="selectedPath"
               :loading="listLoading"
               @select="select($event, true)"
             />
-            <ArticleToc
-              v-else
-              :items="articleToc"
-              :active-id="activeHeadingId"
-              @navigate="onTocNavigate"
-            />
           </div>
         </div>
       </div>
     </transition>
+
+    <!-- 浮动目录组件 -->
+    <FloatingToc
+      v-if="articleToc.length"
+      :items="articleToc"
+      :active-id="activeHeadingId"
+      @navigate="scrollToHeading"
+    />
   </div>
 </template>
 
@@ -159,7 +152,7 @@ import { useRoute, useRouter } from 'vue-router'
 import { marked } from 'marked'
 import Icon from '../components/ui/Icon.vue'
 import ChapterTree from '../components/article/ChapterTree.vue'
-import ArticleToc from '../components/article/ArticleToc.vue'
+import FloatingToc from '../components/article/FloatingToc.vue'
 import ImageCanvas from '../components/ImageCanvas/ImageCanvas.vue'
 import InlineTrack from '../components/player/InlineTrack.vue'
 import {
@@ -419,12 +412,6 @@ function parseArticleToc() {
 function scrollToHeading(id) {
   const el = document.getElementById(id)
   if (el) el.scrollIntoView({ behavior: 'smooth', block: 'start' })
-  if (drawer.value === 'toc') drawer.value = ''
-}
-
-function onTocNavigate(id) {
-  drawer.value = ''
-  nextTick(() => scrollToHeading(id))
 }
 
 // ---------- 滚动：阅读进度 + 目录高亮 ----------
@@ -651,10 +638,6 @@ function retry() {
   cursor: default;
 }
 
-.toc-btn {
-  display: none;
-}
-
 .read-progress {
   height: 2px;
   margin: 0 -40px;
@@ -681,10 +664,6 @@ function retry() {
 
 .article-col {
   min-width: 0;
-}
-
-.toc-rail {
-  display: none;
 }
 
 .article-skeleton {
@@ -882,33 +861,7 @@ function retry() {
   overflow: hidden;
 }
 
-.drawer-body :deep(.toc) {
-  position: static;
-  max-height: none;
-  border-left: 0;
-  padding: 0;
-}
-
 /* ---------- 响应式 ---------- */
-
-@media (min-width: 1400px) {
-  .article-grid {
-    grid-template-columns: minmax(0, 1fr) 176px;
-    max-width: 968px;
-  }
-  .toc-rail {
-    display: block;
-  }
-  .toc-btn {
-    display: none;
-  }
-}
-
-@media (max-width: 1399px) {
-  .toc-btn {
-    display: inline-flex;
-  }
-}
 
 @media (max-width: 1023px) {
   .article-page {
