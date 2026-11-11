@@ -39,7 +39,7 @@
 
 ### 🎵 插入音乐
 
-`.mp3` 放在 `musicpage` 仓库根目录，然后在文章里写音乐标记：
+`.mp3` 放在 `sth_ineed` 仓库的 `musics/` 目录，然后在文章里写音乐标记：
 
 ```
 [music:歌曲名.mp3]
@@ -129,7 +129,9 @@ npm run preview # 本地预览构建产物
 |------|------|------|
 | 文章 / PDF | `Plana-EpicTankCommander/sth_ineed` | `novels/` |
 | 图片 | `Plana-EpicTankCommander/sth_ineed` | `images/` |
-| 音乐 | `Plana-EpicTankCommander/musicpage` | 根目录 |
+| 音乐 | `Plana-EpicTankCommander/sth_ineed` | `musics/` |
+
+> 内容清单：`sth_ineed` 仓库里的 GitHub Action 会在 `novels/`、`images/`、`musics/` 变更时生成根目录的 `manifest.json`。前端优先读取这份静态清单（不消耗 API 额度），读不到时自动回退到 GitHub API。
 
 ## 注意事项
 

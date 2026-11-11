@@ -1,6 +1,10 @@
 const GITHUB_API = 'https://api.github.com'
 const GITHUB_RAW = 'https://raw.githubusercontent.com'
 
+// 内容清单：由 sth_ineed 的 GitHub Action 生成，前端直接读静态文件，不消耗 API 额度
+const MANIFEST_URL = `${GITHUB_RAW}/Plana-EpicTankCommander/sth_ineed/main/manifest.json`
+let manifestCache = { files: null, ts: 0 }
+
 // 简单内存缓存：2分钟内不重复请求
 const listCache = {}
 const LIST_CACHE_TTL = 2 * 60 * 1000  // 2 分钟
@@ -20,9 +24,9 @@ const REPO_CONFIG = {
   },
   musics: {
     owner: 'Plana-EpicTankCommander',
-    repo: 'musicpage',
+    repo: 'sth_ineed',
     branch: 'main',
-    baseDir: ''
+    baseDir: 'musics'
   }
 }
 
@@ -265,7 +269,57 @@ export async function resolveCanvasMarkers(html, markdownPath) {
   return result
 }
 
-// 获取文件列表（需要 GitHub API）
+// 读取内容清单（同一份清单覆盖 novels / images / musics）
+async function loadManifest() {
+  const now = Date.now()
+  if (manifestCache.files && (now - manifestCache.ts) < LIST_CACHE_TTL) {
+    return manifestCache.files
+  }
+  const res = await fetch(MANIFEST_URL, { cache: 'no-cache' })
+  if (!res.ok) throw new Error(`manifest ${res.status}`)
+  const data = await res.json()
+  if (!data || !Array.isArray(data.files)) throw new Error('manifest 格式不正确')
+  manifestCache = { files: data.files, ts: now }
+  return data.files
+}
+
+// 把清单条目整理成各栏目需要的数据结构（与 GitHub API 返回的形状保持一致）
+function itemsFromManifest(files, section) {
+  const inDir = (file, dir) => file.path.startsWith(`${dir}/`)
+  const imageRe = /\.(png|jpe?g|gif|webp)$/i
+
+  if (section === 'novels') {
+    return files
+      .filter((f) => inDir(f, 'novels') && f.name !== 'README.md' && /\.(md|pdf)$/i.test(f.name))
+      .map((f) => {
+        const relativePath = f.path.replace(/^novels\//, '')
+        return {
+          name: f.name,
+          path: f.path,
+          size: f.size,
+          type: 'file',
+          folder: relativePath.includes('/') ? relativePath.split('/')[0] : '',
+          fileType: /\.pdf$/i.test(f.name) ? 'pdf' : 'md'
+        }
+      })
+  }
+
+  if (section === 'images') {
+    return files
+      .filter((f) => inDir(f, 'images') && imageRe.test(f.name))
+      .map((f) => ({ name: f.name, path: f.path, size: f.size, type: 'file' }))
+  }
+
+  if (section === 'musics') {
+    return files
+      .filter((f) => inDir(f, 'musics') && /\.mp3$/i.test(f.name))
+      .map((f) => ({ name: f.name, path: f.path, size: f.size, type: 'file' }))
+  }
+
+  return []
+}
+
+// 获取文件列表：优先读静态清单，清单不可用时回退 GitHub API
 async function listFiles(section) {
   const config = REPO_CONFIG[section]
   if (!config) return []
@@ -274,6 +328,15 @@ async function listFiles(section) {
   const now = Date.now()
   if (listCache[section] && (now - listCache[section].ts) < LIST_CACHE_TTL) {
     return listCache[section].data
+  }
+
+  try {
+    const files = await loadManifest()
+    const result = itemsFromManifest(files, section)
+    listCache[section] = { data: result, ts: now }
+    return result
+  } catch (e) {
+    console.warn('内容清单不可用，回退 GitHub API：', e.message)
   }
 
   let result = []
@@ -355,7 +418,8 @@ export function getImageUrl(section, path) {
 }
 export function getMusicUrl(section, path) {
   const config = REPO_CONFIG[section]
-  return `${GITHUB_RAW}/${config.owner}/${config.repo}/${config.branch}/${path}`
+  const baseDir = config.baseDir ? config.baseDir + '/' : ''
+  return `${GITHUB_RAW}/${config.owner}/${config.repo}/${config.branch}/${baseDir}${path}`
 }
 
 export function getPdfRawUrl(path) {
@@ -370,7 +434,7 @@ export function itemImageUrl(item) {
 
 // 栏目音乐直链（供曲目列表 / 播放器使用）
 export function itemMusicUrl(item) {
-  return getMusicUrl('musics', item.path)
+  return getMusicUrl('musics', item.path.replace(/^musics\//, ''))
 }
 
 export function groupFiles(files, section) {

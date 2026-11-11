@@ -161,7 +161,8 @@ import {
   groupFiles,
   replaceMarkdownImageUrls,
   resolveCanvasMarkers,
-  getPdfRawUrl
+  getPdfRawUrl,
+  itemMusicUrl
 } from '../services/contentSource'
 
 marked.use({ breaks: true })
@@ -372,8 +373,7 @@ async function resolveMusicMarkers(html) {
     const musicFile = musicFiles.find((file) => file.name === filename)
     if (!musicFile) continue
 
-    const encodedPath = musicFile.path.split('/').map((part) => encodeURIComponent(part)).join('/')
-    const url = `https://raw.githubusercontent.com/Plana-EpicTankCommander/musicpage/main/${encodedPath}`
+    const url = itemMusicUrl(musicFile)
     const title = customTitle || filename.replace(/\.mp3$/i, '')
     const host = `<div class="inline-track-host" data-track-src="${escapeAttr(url)}" data-track-title="${escapeAttr(title)}"></div>`
     result = result.replace(fullMatch, () => host)
