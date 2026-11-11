@@ -4,7 +4,7 @@
 
     <header class="mobile-topbar">
       <router-link to="/" class="mt-brand" aria-label="回到主页">
-        <span class="mt-mark"><Icon name="eye" :size="17" :stroke-width="1.6" /></span>
+        <span class="mt-mark"><img :src="avatarUrl" alt="" /></span>
         <span class="mt-name">古明地灵殿</span>
       </router-link>
       <button type="button" class="btn-icon" :aria-label="theme === 'dark' ? '切换浅色主题' : '切换深色主题'" @click="toggle">
@@ -35,6 +35,7 @@ import { usePlayerStore } from './stores/player'
 
 const { theme, toggle } = useTheme()
 const player = usePlayerStore()
+const avatarUrl = `${import.meta.env.BASE_URL}koishi-avatar.png`
 </script>
 
 <style scoped>
@@ -98,11 +99,17 @@ const player = usePlayerStore()
   .mt-mark {
     width: 30px;
     height: 30px;
-    display: grid;
-    place-items: center;
-    border-radius: 10px;
-    color: #fff;
-    background: linear-gradient(145deg, #7b56c4, #4d3488);
+    display: block;
+    border-radius: 50%;
+    overflow: hidden;
+    background: var(--surface-2);
+  }
+
+  .mt-mark img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    display: block;
   }
 
   .mt-name {

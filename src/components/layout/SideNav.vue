@@ -2,7 +2,7 @@
   <aside class="sidenav">
     <router-link to="/" class="brand" aria-label="回到主页">
       <span class="brand-mark">
-        <Icon name="eye" :size="23" :stroke-width="1.5" />
+        <img :src="avatarUrl" alt="" />
       </span>
       <span class="brand-text">
         <strong>古明地灵殿</strong>
@@ -53,6 +53,7 @@ import { useTheme } from '../../composables/useTheme'
 
 const route = useRoute()
 const { theme, toggle } = useTheme()
+const avatarUrl = `${import.meta.env.BASE_URL}koishi-avatar.png`
 
 function isActive(to) {
   return to === '/' ? route.path === '/' : route.path.startsWith(to)
@@ -83,12 +84,19 @@ function isActive(to) {
 .brand-mark {
   width: 42px;
   height: 42px;
-  border-radius: 14px;
-  display: grid;
-  place-items: center;
-  color: #fff;
-  background: linear-gradient(145deg, #7b56c4, #553a94 60%, #3f2a72);
-  box-shadow: 0 6px 16px rgba(85, 58, 148, 0.32), inset 0 1px 0 rgba(255, 255, 255, 0.22);
+  flex-shrink: 0;
+  border-radius: 50%;
+  overflow: hidden;
+  display: block;
+  background: var(--surface-2);
+  box-shadow: 0 4px 14px rgba(38, 33, 48, 0.16);
+}
+
+.brand-mark img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
 }
 
 .brand-text {
