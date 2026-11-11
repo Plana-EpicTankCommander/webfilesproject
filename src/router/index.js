@@ -1,47 +1,48 @@
 import { createRouter, createWebHashHistory } from 'vue-router'
-import Home from '../views/Home.vue'
-import Article from '../views/Article.vue'
-import Image from '../views/Image.vue'
-import Sound from '../views/Sound.vue'
-import Status from '../views/Status.vue'
-import Dev from '../views/Dev.vue'
 
 const routes = [
   {
     path: '/',
     name: 'Home',
-    component: Home
+    component: () => import('../views/Home.vue')
   },
   {
     path: '/article',
     name: 'Article',
-    component: Article
+    component: () => import('../views/Article.vue')
   },
   {
     path: '/image',
     name: 'Image',
-    component: Image
+    component: () => import('../views/Image.vue')
   },
   {
     path: '/sound',
     name: 'Sound',
-    component: Sound
+    component: () => import('../views/Sound.vue')
   },
   {
     path: '/status',
     name: 'Status',
-    component: Status
+    component: () => import('../views/Status.vue')
   },
   {
     path: '/dev',
     name: 'Dev',
-    component: Dev
-  }
+    component: () => import('../views/Dev.vue')
+  },
+  { path: '/:pathMatch(.*)*', redirect: '/' }
 ]
 
 const router = createRouter({
   history: createWebHashHistory(),
-  routes
+  routes,
+  scrollBehavior(to, from, savedPosition) {
+    if (savedPosition) return savedPosition
+    // 只在页面切换时回到顶部；仅 query 变化（切章节 / 打开大图）保持当前位置
+    if (to.path !== from.path) return { top: 0 }
+    return false
+  }
 })
 
 export default router

@@ -1,0 +1,216 @@
+/* ===========================================================
+   正文排版（作用于 v-html 渲染的 Markdown）
+   =========================================================== */
+
+.prose {
+  --prose-size: 17px;
+  font-family: var(--font-serif);
+  font-size: var(--prose-size);
+  line-height: 1.95;
+  color: var(--ink);
+  letter-spacing: 0.01em;
+  overflow-wrap: break-word;
+}
+
+.prose > :first-child {
+  margin-top: 0;
+}
+
+.prose > * + * {
+  margin-top: 1.05em;
+}
+
+.prose h1,
+.prose h2,
+.prose h3,
+.prose h4,
+.prose h5,
+.prose h6 {
+  font-family: var(--font-serif);
+  font-weight: 700;
+  line-height: 1.45;
+  color: var(--ink);
+  scroll-margin-top: 104px;
+  margin-top: 2.1em;
+  margin-bottom: 0.6em;
+}
+
+.prose h1 {
+  font-size: 1.72em;
+  padding-bottom: 0.45em;
+  border-bottom: 2px solid var(--line);
+}
+
+.prose h2 {
+  font-size: 1.32em;
+  padding-bottom: 0.35em;
+  border-bottom: 1px solid var(--line);
+}
+
+.prose h3 {
+  font-size: 1.1em;
+}
+
+.prose h4 {
+  font-size: 1em;
+  color: var(--ink-soft);
+}
+
+.prose p {
+  margin: 0;
+}
+
+.prose a {
+  color: var(--accent-ink);
+  text-decoration: underline;
+  text-decoration-color: color-mix(in srgb, var(--accent) 35%, transparent);
+  text-underline-offset: 3px;
+  transition: text-decoration-color var(--fast);
+}
+
+.prose a:hover {
+  text-decoration-color: var(--accent);
+}
+
+.prose strong {
+  font-weight: 700;
+}
+
+.prose em {
+  font-style: italic;
+}
+
+.prose img {
+  display: block;
+  max-width: 70%;
+  height: auto;
+  margin: 1.7em auto;
+  border-radius: var(--radius-sm);
+  box-shadow: var(--shadow-sm);
+}
+
+/* 文章里常见的站外嵌入（B 站 / YouTube 等） */
+.prose iframe,
+.prose video {
+  display: block;
+  width: 100%;
+  max-width: 100%;
+  height: auto;
+  aspect-ratio: 16 / 9;
+  margin: 1.7em 0;
+  border: 0;
+  border-radius: var(--radius-sm);
+  background: var(--surface-2);
+  box-shadow: var(--shadow-sm);
+}
+
+.prose hr {
+  border: 0;
+  height: 1px;
+  background: var(--line);
+  margin: 2.6em auto;
+  width: 40%;
+}
+
+.prose blockquote {
+  margin: 1.6em 0;
+  padding: 0.6em 1.2em;
+  border-left: 3px solid var(--accent);
+  border-radius: 0 var(--radius-sm) var(--radius-sm) 0;
+  background: var(--accent-soft);
+  color: var(--accent-ink);
+}
+
+.prose blockquote p + p {
+  margin-top: 0.6em;
+}
+
+.prose ul,
+.prose ol {
+  padding-left: 1.45em;
+  list-style: revert;
+}
+
+.prose li + li {
+  margin-top: 0.35em;
+}
+
+.prose li > ul,
+.prose li > ol {
+  margin-top: 0.35em;
+}
+
+.prose code {
+  font-family: ui-monospace, SFMono-Regular, 'Cascadia Code', Consolas, monospace;
+  font-size: 0.86em;
+  padding: 0.12em 0.42em;
+  border-radius: 5px;
+  background: var(--surface-2);
+  color: var(--accent-ink);
+}
+
+.prose pre {
+  padding: 1em 1.2em;
+  border-radius: var(--radius-sm);
+  background: var(--surface-2);
+  border: 1px solid var(--line);
+  overflow-x: auto;
+  line-height: 1.65;
+}
+
+.prose pre code {
+  padding: 0;
+  background: none;
+  color: inherit;
+  font-size: 0.85em;
+}
+
+.prose table {
+  width: 100%;
+  border-collapse: collapse;
+  font-family: var(--font-ui);
+  font-size: 0.88em;
+  line-height: 1.65;
+}
+
+.prose th,
+.prose td {
+  border: 1px solid var(--line);
+  padding: 0.5em 0.75em;
+  text-align: left;
+}
+
+.prose th {
+  background: var(--surface-2);
+  font-weight: 600;
+}
+
+/* 自定义标记 */
+.prose .em-sp {
+  display: inline-block;
+  width: 2em;
+}
+
+.prose .en-sp {
+  display: inline-block;
+  width: 1em;
+}
+
+.prose .image-canvas-host {
+  margin: 1.9em 0;
+}
+
+.prose .inline-track-host {
+  margin: 1.7em 0;
+}
+
+.prose .inline-track-host + .inline-track-host {
+  margin-top: 0.9em;
+}
+
+/* 窄屏正文图片放宽 */
+@media (max-width: 700px) {
+  .prose img {
+    max-width: 100%;
+  }
+}

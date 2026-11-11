@@ -312,7 +312,11 @@ async function fetchDirRecursive(owner, repo, branch, path, basePath = '') {
   const res = await fetch(url, {
     headers: { 'Accept': 'application/vnd.github.v3+json' }
   })
-  if (!res.ok) return []
+  if (!res.ok) {
+    // 限流要显式抛出，否则页面会静默显示成「空书架」
+    if (res.status === 403 || res.status === 429) throw new Error('API 请求次数超限，请稍后再试')
+    return []
+  }
   const data = await res.json()
   if (!Array.isArray(data)) return []
 
@@ -344,21 +348,34 @@ export async function readTextFile(section, path) {
 
 // 用 raw.githubusercontent.com 读取图片
 // 音乐直接用 raw URL
-export async function getImageUrl(section, path) {
+export function getImageUrl(section, path) {
   const config = REPO_CONFIG[section]
   const baseDir = config.baseDir ? config.baseDir + '/' : ''
   return `${GITHUB_RAW}/${config.owner}/${config.repo}/${config.branch}/${baseDir}${path}`
 }
-export async function getMusicUrl(section, path) {
+export function getMusicUrl(section, path) {
   const config = REPO_CONFIG[section]
   return `${GITHUB_RAW}/${config.owner}/${config.repo}/${config.branch}/${path}`
 }
 
-export async function getPdfUrl(path) {
+export function getPdfRawUrl(path) {
   const encodedPath = path.split('/').map(p => encodeURIComponent(p)).join('/')
-  const rawUrl = `${GITHUB_RAW}/Plana-EpicTankCommander/sth_ineed/main/${encodedPath}`
+  return `${GITHUB_RAW}/Plana-EpicTankCommander/sth_ineed/main/${encodedPath}`
+}
+
+export async function getPdfUrl(path) {
   // 用 PDF.js viewer（任何浏览器都支持）
-  return `https://mozilla.github.io/pdf.js/web/viewer.html?file=${encodeURIComponent(rawUrl)}`
+  return `https://mozilla.github.io/pdf.js/web/viewer.html?file=${encodeURIComponent(getPdfRawUrl(path))}`
+}
+
+// 栏目图片直链（供画廊 / 首页使用）
+export function itemImageUrl(item) {
+  return getImageUrl('images', item.path.replace(/^images\//, ''))
+}
+
+// 栏目音乐直链（供曲目列表 / 播放器使用）
+export function itemMusicUrl(item) {
+  return getMusicUrl('musics', item.path)
 }
 
 export function groupFiles(files, section) {
@@ -390,4 +407,4 @@ export function groupFiles(files, section) {
     })
 }
 
-export { listFiles, naturalSort, replaceMarkdownImageUrls }
+export { listFiles, naturalSort, replaceMarkdownImageUrls, REPO_CONFIG }

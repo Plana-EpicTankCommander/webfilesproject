@@ -1,68 +1,220 @@
 <template>
-  <div class="page-with-sidenav">
-    <!-- 文章目录侧边栏 -->
-    <aside class="sidenav">
-      <div class="sidenav-title">章节目录</div>
-      <div class="sidenav-list">
-        <div
-          v-for="(items, category) in grouped"
-          :key="category"
-          class="sidenav-category"
-        >
-          <div class="category-label">{{ category }}</div>
-          <div
-            v-for="item in items"
-            :key="item.path"
-            class="sidenav-item"
-            :class="{ active: selectedFile === item.path }"
-            @click="loadContent(item)"
-          >
-            {{ item.displayName }}
-          </div>
-        </div>
-      </div>
+  <div class="article-page">
+    <aside class="chapter-rail">
+      <ChapterTree
+        :groups="groups"
+        :selected="selectedPath"
+        :loading="listLoading"
+        @select="select"
+      />
     </aside>
 
-    <!-- 文章内容 -->
-    <div class="content-area">
-      <!-- 文章内目录（悬浮式） -->
-      <div v-if="articleToc.length > 0" class="article-toc" :class="{ collapsed: tocCollapsed }">
-        <div class="toc-header" @click="tocCollapsed = !tocCollapsed">
-          <span>📑 文章目录</span>
-          <span class="toc-toggle">{{ tocCollapsed ? '▶' : '▼' }}</span>
+    <div class="article-main">
+      <header class="toolbar">
+        <div class="toolbar-inner">
+          <button type="button" class="btn btn-ghost btn-sm rail-btn" @click="openDrawer('chapters')">
+            <Icon name="list" :size="16" />
+            章节
+          </button>
+
+          <div class="crumb" :title="currentTitle">
+            <span v-if="currentGroup" class="crumb-group">{{ currentGroup }}</span>
+            <span v-if="currentGroup" class="crumb-sep">/</span>
+            <span class="crumb-title">{{ currentItem ? currentTitle : '未选择章节' }}</span>
+          </div>
+
+          <div class="toolbar-actions">
+            <button type="button" class="aa-btn" aria-label="缩小字号" :disabled="fontSize <= 15" @click="adjustFont(-1)">A−</button>
+            <button type="button" class="aa-btn" aria-label="放大字号" :disabled="fontSize >= 21" @click="adjustFont(1)">A+</button>
+            <button type="button" class="btn btn-ghost btn-sm toc-btn" @click="openDrawer('toc')">
+              <Icon name="list" :size="16" />
+              目录
+            </button>
+          </div>
         </div>
-        <div class="toc-list" v-show="!tocCollapsed">
-          <div
-            v-for="(item, index) in articleToc"
-            :key="index"
-            class="toc-item"
-            :class="'toc-level-' + item.level"
-            :style="{ paddingLeft: (item.level - 1) * 12 + 'px' }"
-            @click="scrollToHeading(item.id)"
-          >
-            {{ item.text }}
+        <div class="read-progress" aria-hidden="true"><i :style="{ width: readingProgress + '%' }" /></div>
+      </header>
+
+      <div class="article-grid">
+        <div class="article-col">
+          <!-- 加载 -->
+          <div v-if="loading" class="article-skeleton">
+            <div class="skeleton sk-title" />
+            <div v-for="n in 7" :key="n" class="skeleton sk-line" :class="{ 'is-short': n % 3 === 0 }" />
+          </div>
+
+          <!-- 错误 -->
+          <div v-else-if="error" class="notice notice-error">
+            <Icon name="alert" :size="18" />
+            <span class="err-text">{{ error }}</span>
+            <button type="button" class="btn btn-sm" @click="retry">
+              <Icon name="refresh" :size="14" />
+              重试
+            </button>
+          </div>
+
+          <!-- PDF -->
+          <div v-else-if="pdfUrl" class="pdf-wrap">
+            <div class="pdf-bar">
+              <span class="chip chip-accent">
+                <Icon name="file" :size="13" />
+                PDF
+              </span>
+              <span class="pdf-name">{{ currentTitle }}</span>
+              <a class="section-link" :href="pdfRawUrl" target="_blank" rel="noreferrer">
+                新窗口打开
+                <Icon name="external" :size="13" />
+              </a>
+            </div>
+            <div class="pdf-frame card">
+              <iframe :src="pdfUrl" title="PDF 阅读器" frameborder="0" />
+            </div>
+          </div>
+
+          <!-- 正文 -->
+          <article
+            v-else-if="htmlContent"
+            ref="articleRef"
+            class="prose"
+            :style="{ '--prose-size': fontSize + 'px' }"
+            v-html="htmlContent"
+          />
+
+          <!-- 空 -->
+          <div v-else class="empty-state">
+            <span class="es-icon"><Icon name="book" :size="26" /></span>
+            <p class="es-title">从左侧挑选一篇文稿</p>
+            <p class="es-text">章节按文件夹分组，点击即可开始阅读。</p>
+          </div>
+
+          <nav v-if="prevItem || nextItem" class="chapter-nav" aria-label="章节导航">
+            <button
+              type="button"
+              class="nav-card"
+              :class="{ 'is-disabled': !prevItem }"
+              :disabled="!prevItem"
+              @click="prevItem && select(prevItem)"
+            >
+              <span class="nc-label"><Icon name="arrow-left" :size="14" /> 上一篇</span>
+              <span class="nc-name">{{ prevItem ? prevItem.displayName : '已经是第一篇' }}</span>
+            </button>
+            <button
+              type="button"
+              class="nav-card is-next"
+              :class="{ 'is-disabled': !nextItem }"
+              :disabled="!nextItem"
+              @click="nextItem && select(nextItem)"
+            >
+              <span class="nc-label">下一篇 <Icon name="arrow-right" :size="14" /></span>
+              <span class="nc-name">{{ nextItem ? nextItem.displayName : '已经是最后一篇' }}</span>
+            </button>
+          </nav>
+        </div>
+
+        <aside v-if="articleToc.length" class="toc-rail">
+          <ArticleToc :items="articleToc" :active-id="activeHeadingId" @navigate="scrollToHeading" />
+        </aside>
+      </div>
+    </div>
+
+    <!-- 移动端抽屉 -->
+    <transition name="fade">
+      <div v-if="drawer" class="drawer-backdrop" @click.self="drawer = false">
+        <div class="drawer">
+          <div class="drawer-head">
+            <span>{{ drawer === 'chapters' ? '章节目录' : '本页目录' }}</span>
+            <button type="button" class="btn-icon" aria-label="关闭" @click="drawer = false">
+              <Icon name="close" :size="18" />
+            </button>
+          </div>
+          <div class="drawer-body">
+            <ChapterTree
+              v-if="drawer === 'chapters'"
+              :groups="groups"
+              :selected="selectedPath"
+              :loading="listLoading"
+              @select="select($event, true)"
+            />
+            <ArticleToc
+              v-else
+              :items="articleToc"
+              :active-id="activeHeadingId"
+              @navigate="onTocNavigate"
+            />
           </div>
         </div>
       </div>
-
-      <div v-if="loading" class="loading">加载中...</div>
-      <div v-else-if="error" class="error">{{ error }}</div>
-      <div v-else-if="pdfUrl" class="pdf-container">
-        <iframe :src="pdfUrl" frameborder="0"></iframe>
-      </div>
-      <article v-else-if="htmlContent" class="markdown-body" ref="articleRef" v-html="htmlContent"></article>
-      <div v-else class="empty">请从左侧选择章节</div>
-    </div>
+    </transition>
   </div>
 </template>
 
 <script setup>
-import { ref, computed, onMounted, onUnmounted, nextTick, createApp } from 'vue'
+import { computed, createApp, nextTick, onMounted, onUnmounted, ref, watch } from 'vue'
+import { getActivePinia } from 'pinia'
+import { useRoute, useRouter } from 'vue-router'
 import { marked } from 'marked'
+import Icon from '../components/ui/Icon.vue'
+import ChapterTree from '../components/article/ChapterTree.vue'
+import ArticleToc from '../components/article/ArticleToc.vue'
 import ImageCanvas from '../components/ImageCanvas/ImageCanvas.vue'
-import { listFiles, readTextFile, groupFiles, replaceMarkdownImageUrls, resolveCanvasMarkers, getPdfUrl } from '../services/contentSource'
+import InlineTrack from '../components/player/InlineTrack.vue'
+import {
+  listFiles,
+  readTextFile,
+  groupFiles,
+  replaceMarkdownImageUrls,
+  resolveCanvasMarkers,
+  getPdfUrl,
+  getPdfRawUrl
+} from '../services/contentSource'
 
 marked.use({ breaks: true })
+
+const LAST_KEY = 'chireiden:last-chapter'
+const FONT_KEY = 'chireiden:font-size'
+
+const route = useRoute()
+const router = useRouter()
+
+const groups = ref([])
+const flatItems = ref([])
+const selectedPath = ref('')
+const htmlContent = ref('')
+const pdfUrl = ref('')
+const pdfRawUrl = ref('')
+const loading = ref(false)
+const listLoading = ref(true)
+const error = ref('')
+const articleRef = ref(null)
+
+const articleToc = ref([])
+const activeHeadingId = ref('')
+const readingProgress = ref(0)
+
+const fontSize = ref(readFontSize())
+const drawer = ref('')
+
+const mountedApps = []
+
+const flatIndex = computed(() => flatItems.value.findIndex((item) => item.path === selectedPath.value))
+const currentItem = computed(() => (flatIndex.value >= 0 ? flatItems.value[flatIndex.value] : null))
+const currentGroup = computed(() => currentItem.value?.group || '')
+const currentTitle = computed(() => currentItem.value?.displayName || '')
+const prevItem = computed(() => (flatIndex.value > 0 ? flatItems.value[flatIndex.value - 1] : null))
+const nextItem = computed(() => {
+  const next = flatIndex.value + 1
+  return flatIndex.value >= 0 && next < flatItems.value.length ? flatItems.value[next] : null
+})
+
+function readFontSize() {
+  try {
+    const raw = Number(localStorage.getItem(FONT_KEY))
+    if (raw >= 15 && raw <= 21) return raw
+  } catch {
+    /* ignore */
+  }
+  return 17
+}
 
 function preprocess(text) {
   return text
@@ -70,105 +222,117 @@ function preprocess(text) {
     .replace(/&ensp;/g, '<span class="en-sp"></span>')
 }
 
-const files = ref([])
-const selectedFile = ref('')
-const pdfUrl = ref('')
-const htmlContent = ref('')
-const loading = ref(false)
-const error = ref('')
-const articleRef = ref(null)
-const articleToc = ref([])
-const tocCollapsed = ref(false)
+function displayNameOf(item) {
+  return item.fileType === 'pdf'
+    ? item.name.replace(/\.pdf$/i, '')
+    : item.name.replace(/\.md$/i, '')
+}
 
 onMounted(async () => {
+  await loadList()
+  window.addEventListener('scroll', onScroll, { passive: true })
+  window.addEventListener('resize', onScroll)
+  onScroll()
+})
+
+onUnmounted(() => {
+  window.removeEventListener('scroll', onScroll)
+  window.removeEventListener('resize', onScroll)
+  destroyEmbeds()
+  if (scrollRaf) cancelAnimationFrame(scrollRaf)
+})
+
+async function loadList() {
+  listLoading.value = true
   try {
     const data = await listFiles('novels')
-    files.value = data
-  } catch (e) {
-    error.value = '加载失败：' + e.message
-  }
-})
-
-const grouped = computed(() => {
-  const groups = groupFiles(files.value, 'novels')
-  const map = {}
-  for (const g of groups) {
-    map[g.title] = g.items.map(f => ({
-      ...f,
-      displayName: f.fileType === 'pdf' ? f.name.replace(/\.pdf$/i, '') : f.name.replace(/\.md$/, '')
+    groups.value = groupFiles(data, 'novels').map((group) => ({
+      ...group,
+      items: group.items.map((item) => ({ ...item, displayName: displayNameOf(item) }))
     }))
-  }
-  return map
-})
+    flatItems.value = groups.value.flatMap((group) =>
+      group.items.map((item) => ({ ...item, group: group.title }))
+    )
 
-// 文章里的画布查看器实例（v-html 里无法直接写组件，只能手动挂载）
-const canvasApps = []
-
-function mountCanvasViewers() {
-  if (!articleRef.value) return
-  articleRef.value.querySelectorAll('.image-canvas-host').forEach(host => {
-    if (!host.dataset.canvasSrc) return
-    const app = createApp(ImageCanvas, {
-      src: host.dataset.canvasSrc,
-      alt: host.dataset.canvasAlt || '',
-      height: host.dataset.canvasHeight || '420px',
-      fitMode: host.dataset.canvasFit || 'contain'
-    })
-    app.mount(host)
-    canvasApps.push(app)
-  })
-}
-
-function destroyCanvasViewers() {
-  while (canvasApps.length) {
-    const app = canvasApps.pop()
-    try {
-      app.unmount()
-    } catch (e) {
-      console.warn('画布卸载失败:', e)
-    }
+    const target = pickInitial()
+    if (target) await loadContent(target, false)
+    else listLoading.value = false
+  } catch (e) {
+    listLoading.value = false
+    error.value = `章节列表加载失败：${e.message}`
   }
 }
 
-onUnmounted(destroyCanvasViewers)
+function pickInitial() {
+  const wanted = typeof route.query.doc === 'string' ? route.query.doc : readLast()
+  const found = flatItems.value.find((item) => item.path === wanted)
+  return found || flatItems.value[0] || null
+}
 
-async function loadContent(item) {
+function readLast() {
+  try {
+    return localStorage.getItem(LAST_KEY) || ''
+  } catch {
+    return ''
+  }
+}
+
+function remember(path) {
+  try {
+    localStorage.setItem(LAST_KEY, path)
+  } catch {
+    /* ignore */
+  }
+}
+
+async function loadContent(item, scroll = true) {
   if (!item) return
-  destroyCanvasViewers()
-  selectedFile.value = item.path
+  destroyEmbeds()
+  selectedPath.value = item.path
+  remember(item.path)
   loading.value = true
   error.value = ''
   htmlContent.value = ''
   pdfUrl.value = ''
+  pdfRawUrl.value = ''
+  articleToc.value = []
+  activeHeadingId.value = ''
+  readingProgress.value = 0
+
   try {
     if (item.fileType === 'pdf') {
-      // PDF 文件直接用 iframe 展示
       pdfUrl.value = await getPdfUrl(item.path)
-    } else {
-      // Markdown 文件渲染为 HTML
-      const text = await readTextFile('novels', item.path)
-      let html = await marked.parse(preprocess(text), { breaks: true, gfm: true })
-      html = await replaceMarkdownImageUrls(html, item.path)
-      html = await resolveCanvasMarkers(html, item.path)
-      html = await resolveMusicMarkers(html)
-      htmlContent.value = html
-      // 先结束 loading，article 才会被渲染出来，之后才能拿到 DOM 初始化嵌入内容
+      pdfRawUrl.value = getPdfRawUrl(item.path)
       loading.value = false
-      await nextTick()
-
-      // 解析文章目录并初始化嵌入内容
-      parseArticleToc()
-      initMusicPlayers()
-      mountCanvasViewers()
+      if (scroll) window.scrollTo({ top: 0, behavior: 'auto' })
+      return
     }
+
+    const text = await readTextFile('novels', item.path)
+    let html = await marked.parse(preprocess(text), { breaks: true, gfm: true })
+    html = await replaceMarkdownImageUrls(html, item.path)
+    html = await resolveCanvasMarkers(html, item.path)
+    html = await resolveMusicMarkers(html)
+    htmlContent.value = html
+    loading.value = false
+    await nextTick()
+
+    parseArticleToc()
+    mountEmbeds()
+
+    if (scroll) window.scrollTo({ top: 0, behavior: 'auto' })
+    await nextTick()
+    onScroll()
   } catch (e) {
-    error.value = '加载失败：' + e.message
+    error.value = `加载失败：${e.message}`
   } finally {
     loading.value = false
+    listLoading.value = false
   }
 }
 
-// 替换 [music:歌曲名.mp3;title:标题] 为音频播放器 HTML
+// ---------- 音乐标记 ----------
+
 async function resolveMusicMarkers(html) {
   const musicRegex = /\[music:(.+?\.mp3)(?:;title:([^\]]+))?\]/g
   const matches = [...html.matchAll(musicRegex)]
@@ -184,559 +348,591 @@ async function resolveMusicMarkers(html) {
 
   let result = html
   for (const match of matches) {
-    const fullMatch = match[0]
-    const filename = match[1]
-    const customTitle = match[2]
-    const musicFile = musicFiles.find(f => f.name === filename)
+    const [fullMatch, filename, customTitle] = match
+    const musicFile = musicFiles.find((file) => file.name === filename)
     if (!musicFile) continue
 
-    const encodedPath = musicFile.path.split('/').map(p => encodeURIComponent(p)).join('/')
+    const encodedPath = musicFile.path.split('/').map((part) => encodeURIComponent(part)).join('/')
     const url = `https://raw.githubusercontent.com/Plana-EpicTankCommander/musicpage/main/${encodedPath}`
-    const title = customTitle || filename.replace('.mp3', '')
-
-    const playerHtml = `
-      <div class="inline-player-container" data-src="${url}" data-title="${title}">
-        <div class="ip-info"><h3>${title}</h3></div>
-        <div class="ip-controls">
-          <div class="ip-progress-container">
-            <button class="ip-control-btn paused"></button>
-            <span class="ip-time">00:00</span>
-            <div class="ip-progress-bar">
-              <div class="ip-progress"></div>
-              <input type="range" min="0" max="100" value="0" class="ip-progress-slider">
-            </div>
-            <span class="ip-time total-time">00:00</span>
-          </div>
-          <div class="ip-volume-control hidden">
-            <span class="ip-volume-label">音量</span>
-            <span class="ip-volume-icon">🔊</span>
-            <input type="range" min="0" max="100" value="10" class="ip-volume-slider">
-            <span class="ip-volume-value">10%</span>
-          </div>
-        </div>
-      </div>
-    `
-    result = result.replace(fullMatch, playerHtml)
+    const title = customTitle || filename.replace(/\.mp3$/i, '')
+    const host = `<div class="inline-track-host" data-track-src="${escapeAttr(url)}" data-track-title="${escapeAttr(title)}"></div>`
+    result = result.replace(fullMatch, () => host)
   }
   return result
 }
 
-// 解析文章内的标题目录
+function escapeAttr(value) {
+  return String(value)
+    .replace(/&/g, '&amp;')
+    .replace(/"/g, '&quot;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+}
+
+// ---------- 目录 ----------
+
 function parseArticleToc() {
   articleToc.value = []
   if (!articleRef.value) return
-  
   const headings = articleRef.value.querySelectorAll('h1, h2, h3, h4, h5, h6')
+  const items = []
   headings.forEach((heading, index) => {
-    // 生成唯一 ID
-    const id = 'heading-' + index
+    const id = `heading-${index}`
     heading.id = id
-    
-    const level = parseInt(heading.tagName.charAt(1))
-    articleToc.value.push({
-      level,
-      text: heading.textContent,
-      id
+    items.push({
+      id,
+      level: Number(heading.tagName.charAt(1)),
+      text: heading.textContent?.trim() || ''
     })
+  })
+  articleToc.value = items
+  activeHeadingId.value = items[0]?.id || ''
+}
+
+function scrollToHeading(id) {
+  const el = document.getElementById(id)
+  if (el) el.scrollIntoView({ behavior: 'smooth', block: 'start' })
+  if (drawer.value === 'toc') drawer.value = ''
+}
+
+function onTocNavigate(id) {
+  drawer.value = ''
+  nextTick(() => scrollToHeading(id))
+}
+
+// ---------- 滚动：阅读进度 + 目录高亮 ----------
+
+let scrollRaf = 0
+
+function onScroll() {
+  if (scrollRaf) return
+  scrollRaf = requestAnimationFrame(() => {
+    scrollRaf = 0
+    updateReadingProgress()
+    updateActiveHeading()
   })
 }
 
-// 滚动到指定标题
-function scrollToHeading(id) {
-  const el = document.getElementById(id)
-  if (el) {
-    el.scrollIntoView({ behavior: 'smooth', block: 'start' })
+function updateReadingProgress() {
+  const el = articleRef.value
+  if (!el) {
+    readingProgress.value = 0
+    return
+  }
+  const rect = el.getBoundingClientRect()
+  const top = rect.top + window.scrollY
+  const total = Math.max(rect.height - window.innerHeight, 1)
+  const value = ((window.scrollY - top) / total) * 100
+  readingProgress.value = Math.min(100, Math.max(0, value))
+}
+
+function updateActiveHeading() {
+  if (!articleToc.value.length) return
+  let current = articleToc.value[0].id
+  for (const item of articleToc.value) {
+    const el = document.getElementById(item.id)
+    if (!el) continue
+    if (el.getBoundingClientRect().top <= 150) current = item.id
+    else break
+  }
+  activeHeadingId.value = current
+}
+
+// ---------- 嵌入组件（画布 / 音乐） ----------
+
+function mountEmbeds() {
+  const root = articleRef.value
+  if (!root) return
+
+  root.querySelectorAll('.image-canvas-host').forEach((host) => {
+    if (!host.dataset.canvasSrc) return
+    const app = createApp(ImageCanvas, {
+      src: host.dataset.canvasSrc,
+      alt: host.dataset.canvasAlt || '',
+      height: host.dataset.canvasHeight || '420px',
+      fitMode: host.dataset.canvasFit || 'contain'
+    })
+    app.mount(host)
+    mountedApps.push(app)
+  })
+
+  root.querySelectorAll('.inline-track-host').forEach((host) => {
+    const app = createApp(InlineTrack, {
+      src: host.dataset.trackSrc,
+      title: host.dataset.trackTitle || '未命名曲目'
+    })
+    const pinia = getActivePinia()
+    if (pinia) app.use(pinia)
+    app.mount(host)
+    mountedApps.push(app)
+  })
+}
+
+function destroyEmbeds() {
+  while (mountedApps.length) {
+    const app = mountedApps.pop()
+    try {
+      app.unmount()
+    } catch (e) {
+      console.warn('嵌入组件卸载失败:', e)
+    }
   }
 }
 
-// 用原生 JS 初始化文章里的音频播放器
-function initMusicPlayers() {
-  if (!articleRef.value) return
-  const players = articleRef.value.querySelectorAll('.inline-player-container')
-  players.forEach(container => {
-    const btn = container.querySelector('.ip-control-btn')
-    const audio = container.querySelector('audio')
-    const progressBar = container.querySelector('.ip-progress')
-    const slider = container.querySelector('.ip-progress-slider')
-    const currentTimeEl = container.querySelector('.ip-time')
-    const totalTimeEl = container.querySelector('.total-time')
+// ---------- 交互 ----------
 
-    // 如果还没有 audio 元素，创建一个
-    let audioEl = container.querySelector('audio.element')
-    if (!audioEl) {
-      audioEl = document.createElement('audio')
-      audioEl.className = 'element'
-      audioEl.src = container.dataset.src
-      container.appendChild(audioEl)
-    }
+function select(item, fromDrawer = false) {
+  if (!item) return
+  if (fromDrawer) drawer.value = ''
+  if (item.path === selectedPath.value) return
+  if (route.query.doc !== item.path) {
+    router.replace({ path: '/article', query: { doc: item.path } }).catch(() => {})
+  }
+  loadContent(item)
+}
 
-    // 格式化时间
-    const formatTime = (seconds) => {
-      if (isNaN(seconds) || seconds === 0) return '00:00'
-      const m = Math.floor(seconds / 60)
-      const s = Math.floor(seconds % 60)
-      return `${m.toString().padStart(2, '0')}:${s.toString().padStart(2, '0')}`
-    }
+watch(
+  () => route.query.doc,
+  (doc) => {
+    if (!doc || typeof doc !== 'string' || doc === selectedPath.value) return
+    const found = flatItems.value.find((item) => item.path === doc)
+    if (found) loadContent(found)
+  }
+)
 
-    // 播放/暂停
-    btn.addEventListener('click', () => {
-      if (audioEl.paused) {
-        // 暂停其他所有
-        document.querySelectorAll('.inline-player-container audio').forEach(a => {
-          if (a !== audioEl) { a.pause(); a.dispatchEvent(new Event('pause')) }
-        })
-        audioEl.play()
-        btn.textContent = ''
-        btn.classList.remove('paused')
-        btn.classList.add('playing')
-        // 初始化音量为15%
-        audioEl.volume = 0.10
-        // 显示音量控制
-        const volCtrl = container.querySelector('.ip-volume-control')
-        if (volCtrl) {
-          volCtrl.classList.remove('hidden')
-          const volSlider = volCtrl.querySelector('.ip-volume-slider')
-          const volValue = volCtrl.querySelector('.ip-volume-value')
-          const volIcon = volCtrl.querySelector('.ip-volume-icon')
-          if (volSlider) volSlider.value = 10
-          if (volValue) volValue.textContent = '10%'
-          if (volIcon) volIcon.textContent = '🔈'
-        }
-      } else {
-        audioEl.pause()
-        btn.textContent = ''
-        btn.classList.remove('playing')
-        btn.classList.add('paused')
-      }
-    })
+function adjustFont(delta) {
+  const next = Math.min(21, Math.max(15, fontSize.value + delta))
+  if (next === fontSize.value) return
+  fontSize.value = next
+  try {
+    localStorage.setItem(FONT_KEY, String(next))
+  } catch {
+    /* ignore */
+  }
+}
 
-    // 时间更新
-    audioEl.addEventListener('timeupdate', () => {
-      if (isNaN(audioEl.duration)) return
-      const pct = (audioEl.currentTime / audioEl.duration) * 100
-      if (progressBar) progressBar.style.width = pct + '%'
-      if (slider) slider.value = pct
-      if (currentTimeEl) currentTimeEl.textContent = formatTime(audioEl.currentTime)
-    })
+function openDrawer(mode) {
+  drawer.value = mode
+}
 
-    // 元数据加载完成
-    audioEl.addEventListener('loadedmetadata', () => {
-      if (totalTimeEl) totalTimeEl.textContent = formatTime(audioEl.duration)
-    })
-
-    // 播放结束
-    audioEl.addEventListener('ended', () => {
-      btn.textContent = ''
-      btn.classList.remove('playing')
-      btn.classList.add('paused')
-      if (progressBar) progressBar.style.width = '0%'
-      if (slider) slider.value = 0
-      if (currentTimeEl) currentTimeEl.textContent = '00:00'
-    })
-
-    // 进度条拖动
-    if (slider) {
-      slider.addEventListener('input', () => {
-        if (isNaN(audioEl.duration)) return
-        audioEl.currentTime = (audioEl.duration * parseInt(slider.value)) / 100
-      })
-    }
-
-    // 音量控制
-    const volumeSlider = container.querySelector('.ip-volume-slider')
-    const volumeValue = container.querySelector('.ip-volume-value')
-    const volumeIcon = container.querySelector('.ip-volume-icon')
-    if (volumeSlider) {
-      volumeSlider.addEventListener('input', () => {
-        const vol = parseInt(volumeSlider.value) / 100
-        audioEl.volume = vol
-        if (volumeValue) volumeValue.textContent = volumeSlider.value + '%'
-        if (volumeIcon) volumeIcon.textContent = vol === 0 ? '🔇' : vol < 0.5 ? '🔉' : '🔊'
-      })
-      // 初始化音量图标
-      if (volumeIcon) volumeIcon.textContent = '🔊'
-    }
-  })
+function retry() {
+  if (flatItems.value.length && currentItem.value) loadContent(currentItem.value)
+  else loadList()
 }
 </script>
 
 <style scoped>
-.page-with-sidenav {
-  display: flex;
+.article-page {
+  display: grid;
+  grid-template-columns: var(--rail-w) minmax(0, 1fr);
   min-height: 100vh;
 }
 
-.sidenav {
-  width: 160px;
-  background: #1a1a1a;
-  color: #fff;
-  padding: 1rem 0;
-  flex-shrink: 0;
-  height: 100vh;
+/* ---------- 左侧章节栏 ---------- */
+
+.chapter-rail {
   position: sticky;
   top: 0;
-  align-self: flex-start;
+  height: 100vh;
+  padding: 26px 18px 22px 26px;
+  border-right: 1px solid var(--line);
+  background: color-mix(in srgb, var(--surface) 55%, transparent);
+}
+
+/* ---------- 主区域 ---------- */
+
+.article-main {
+  min-width: 0;
+  padding: 0 40px 120px;
+}
+
+.toolbar {
+  position: sticky;
+  top: 0;
+  z-index: 20;
+  margin: 0 -40px;
+  padding: 0 40px;
+  background: color-mix(in srgb, var(--bg) 88%, transparent);
+  backdrop-filter: blur(12px);
+}
+
+.toolbar-inner {
   display: flex;
-  flex-direction: column;
+  align-items: center;
+  gap: 12px;
+  height: 58px;
 }
 
-.sidenav-title {
-  font-size: 0.8rem;
-  color: #888;
-  padding: 0 0.8rem 0.6rem;
-  border-bottom: 1px solid #333;
-  margin-bottom: 0.6rem;
-  flex-shrink: 0;
+.rail-btn {
+  display: none;
 }
 
-.sidenav-list {
-  overflow-y: auto;
-  flex: 1;
-}
-
-.sidenav-category {
-  margin-bottom: 0.5rem;
-}
-
-.category-label {
-  font-size: 1rem;
-  color: #aaa;
-  font-family: '宋体', 'SimSun', serif;
-  padding: 0.3rem 0.8rem;
-}
-
-.sidenav-item {
-  padding: 0.4rem 0.8rem;
-  font-size: 0.8rem;
-  color: #aaa;
-  cursor: pointer;
-  border-radius: 4px;
-  margin: 0.1rem 0.3rem;
-  transition: background 0.2s, color 0.2s;
-  word-break: break-all;
-}
-
-.sidenav-item:hover {
-  background: #333;
-  color: #fff;
-}
-
-.sidenav-item.active {
-  background: #4a90e2;
-  color: #fff;
-}
-
-.content-area {
+.crumb {
   flex: 1;
   min-width: 0;
   display: flex;
-  flex-direction: column;
-  padding: 2rem 0;
-  position: relative;
-  background-color: rgba(245, 245, 245, 0.85);
-  background-image: url('https://raw.githubusercontent.com/Plana-EpicTankCommander/sth_ineed/main/images/%E6%B0%B4%E7%9D%80%E6%99%AE%E6%8B%89%E5%A8%9C.png');
-  background-blend-mode: overlay;
-  background-repeat: no-repeat;
-  background-position: center right;
-  background-size: 30% auto;
-  background-attachment: fixed;
-}
-
-.content-area > * {
-  align-self: center;
-  width: 100%;
-  max-width: 900px;
-}
-
-.content-area h2 {
-  padding: 0 2rem;
-}
-
-/* 文章内目录 - 悬浮式 */
-.article-toc {
-  position: fixed;
-  left: calc(160px + 150px);
-  top: 20px;
-  width: 200px;
-  max-height: 70vh;
-  background: rgba(255, 255, 255, 0.95);
-  border-radius: 8px;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
-  z-index: 100;
+  align-items: baseline;
+  gap: 8px;
+  font-size: 0.82rem;
   overflow: hidden;
 }
 
-.article-toc.collapsed .toc-list {
-  display: none;
+.crumb-group {
+  flex-shrink: 0;
+  color: var(--accent);
+  letter-spacing: 0.04em;
 }
 
-.toc-header {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  padding: 0.6rem 0.8rem;
-  cursor: pointer;
-  font-size: 0.9rem;
-  color: #333;
-  border-bottom: 1px solid #eee;
-  user-select: none;
+.crumb-sep {
+  color: var(--line-strong);
 }
 
-.toc-header:hover {
-  background: #f5f5f5;
-}
-
-.toc-toggle {
-  font-size: 0.7rem;
-  color: #888;
-}
-
-.toc-list {
-  max-height: calc(100vh - 4rem);
-  overflow-y: auto;
-  padding: 0.5rem 0;
-}
-
-.toc-item {
-  padding: 0.35rem 0.8rem;
-  font-size: 0.8rem;
-  color: #555;
-  cursor: pointer;
-  border-radius: 4px;
-  margin: 0.1rem 0.3rem;
-  transition: background 0.2s, color 0.2s;
-  white-space: nowrap;
+.crumb-title {
+  color: var(--ink);
+  font-family: var(--font-serif);
+  font-size: 0.98rem;
+  font-weight: 600;
   overflow: hidden;
   text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
-.toc-item:hover {
-  background: #e8f0ff;
-  color: #2a5bd8;
+.toolbar-actions {
+  display: flex;
+  align-items: center;
+  gap: 4px;
 }
 
-.toc-level-1 {
-  font-size: 0.85rem;
-  font-weight: 600;
-  color: #333;
-}
-
-.toc-level-2 {
-  font-size: 0.8rem;
-}
-
-.toc-level-3 {
-  font-size: 0.75rem;
-  color: #666;
-}
-
-.toc-level-4,
-.toc-level-5,
-.toc-level-6 {
-  font-size: 0.7rem;
-  color: #888;
-}
-
-.loading, .error, .empty {
-  padding: 1rem;
+.aa-btn {
+  height: 30px;
+  min-width: 34px;
+  padding: 0 8px;
   border-radius: 8px;
-  text-align: center;
-  width: 100%;
-  max-width: 900px;
-  margin: 0 auto;
-  box-sizing: border-box;
+  font-size: 0.78rem;
+  font-weight: 600;
+  color: var(--ink-soft);
+  transition: background var(--fast), color var(--fast);
 }
 
-.loading { background: #f0f0f0; color: #666; }
-.error { background: #ffe0e0; color: #c00; }
-.empty { background: #f9f9f9; color: #999; }
-
-.markdown-body {
-  text-align: left;
-  line-height: 1.8;
-  color: #333;
+.aa-btn:hover:not(:disabled) {
+  background: var(--surface-2);
+  color: var(--ink);
 }
 
-.markdown-body :deep(h1) { border-bottom: 2px solid #eee; padding-bottom: 0.5rem; margin-top: 2rem; }
-.markdown-body :deep(h2) { border-bottom: 1px solid #eee; padding-bottom: 0.3rem; margin-top: 1.5rem; }
-.markdown-body :deep(h3) { margin-top: 1.2rem; }
-.markdown-body :deep(p) { margin: 0.8rem 0; }
-.markdown-body :deep(.em-sp) { display: inline-block; width: 2em; }
-.markdown-body :deep(.en-sp) { display: inline-block; width: 1em; }
-.markdown-body :deep(code) { background: #f5f5f5; padding: 0.1rem 0.4rem; border-radius: 4px; font-size: 0.9em; }
-.markdown-body :deep(pre) { background: #f5f5f5; padding: 1rem; border-radius: 8px; overflow-x: auto; }
-.markdown-body :deep(blockquote) { border-left: 4px solid #4a90e2; margin: 1rem 0; padding: 0.5rem 1rem; background: #f0f7ff; }
-.markdown-body :deep(img) { max-width: 70%; height: auto; display: block; margin: 0 auto; }
-</style>
-
-<style>
-/* 全局样式：文章内音乐播放器（不能用 scoped） */
-.inline-player-container {
-  width: 61.8%;
-  max-width: 100%;
-  background: #fff;
-  border-radius: 10px;
-  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
-  padding: 6px 12px;
-  margin: 8px auto;
-  color: #333;
+.aa-btn:disabled {
+  opacity: 0.35;
+  cursor: default;
 }
 
-.inline-player-container audio {
+.toc-btn {
   display: none;
 }
 
-.ip-info {
-  text-align: center;
-  margin-bottom: 8px;
+.read-progress {
+  height: 2px;
+  margin: 0 -40px;
+  background: var(--line);
 }
 
-.ip-info h3 {
-  margin: 0;
-  color: #2c3e50;
-  font-size: 1.5em;
+.read-progress i {
+  display: block;
+  height: 100%;
+  background: linear-gradient(90deg, var(--accent), var(--accent-2));
+  transition: width 0.12s linear;
 }
 
-.ip-controls {
+/* ---------- 内容网格 ---------- */
+
+.article-grid {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: 36px;
+  max-width: 760px;
+  margin: 0 auto;
+  padding-top: 30px;
+}
+
+.article-col {
+  min-width: 0;
+}
+
+.toc-rail {
+  display: none;
+}
+
+.article-skeleton {
   display: flex;
   flex-direction: column;
-  gap: 6px;
+  gap: 14px;
+  padding-top: 8px;
 }
 
-.ip-progress-container {
+.sk-title {
+  height: 30px;
+  width: 46%;
+  margin-bottom: 10px;
+}
+
+.sk-line {
+  height: 15px;
+  width: 100%;
+}
+
+.sk-line.is-short {
+  width: 68%;
+}
+
+.err-text {
+  flex: 1;
+}
+
+/* ---------- PDF ---------- */
+
+.pdf-bar {
   display: flex;
   align-items: center;
-  gap: 8px;
-  width: 61.8%;
-  margin: 0 auto;
+  gap: 10px;
+  margin-bottom: 12px;
+  font-size: 0.84rem;
 }
 
-.ip-control-btn {
-  width: 12px;
-  height: 12px;
-  border-radius: 50%;
-  border: 2px solid #b19cd9;
-  background: #b19cd9;
-  cursor: pointer;
-  flex-shrink: 0;
-  transition: all 0.3s ease;
+.pdf-name {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  color: var(--ink-soft);
+}
+
+.pdf-frame {
+  overflow: hidden;
   padding: 0;
 }
 
-.ip-control-btn:hover {
-  transform: scale(1.1);
+.pdf-frame iframe {
+  display: block;
+  width: 100%;
+  height: calc(100vh - 210px);
+  min-height: 520px;
+  border: 0;
+  background: var(--surface);
 }
 
-.ip-control-btn.playing {
-  border-color: #6c9bff;
-  background: #6c9bff;
-}
+/* ---------- 空状态 ---------- */
 
-.ip-time {
-  font-size: 0.85em;
-  color: #666;
-  min-width: 40px;
+.empty-state {
+  padding: 60px 24px;
   text-align: center;
+  border-radius: var(--radius);
+  border: 1px dashed var(--line-strong);
 }
 
-.ip-progress-bar {
+.es-icon {
+  display: inline-grid;
+  place-items: center;
+  width: 54px;
+  height: 54px;
+  border-radius: 50%;
+  background: var(--accent-soft);
+  color: var(--accent);
+  margin-bottom: 14px;
+}
+
+.es-title {
+  font-family: var(--font-serif);
+  font-size: 1.05rem;
+  font-weight: 600;
+}
+
+.es-text {
+  margin-top: 6px;
+  font-size: 0.85rem;
+  color: var(--ink-faint);
+}
+
+/* ---------- 上下篇 ---------- */
+
+.chapter-nav {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 14px;
+  margin-top: 56px;
+  padding-top: 24px;
+  border-top: 1px solid var(--line);
+}
+
+.nav-card {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+  padding: 15px 18px;
+  border-radius: var(--radius);
+  border: 1px solid var(--line);
+  background: var(--surface);
+  text-align: left;
+  transition: border-color var(--fast), box-shadow var(--fast), transform var(--fast);
+}
+
+.nav-card:hover:not(:disabled) {
+  border-color: color-mix(in srgb, var(--accent) 36%, var(--line));
+  box-shadow: var(--shadow-sm);
+  transform: translateY(-1px);
+}
+
+.nav-card.is-next {
+  text-align: right;
+  align-items: flex-end;
+}
+
+.nav-card.is-disabled {
+  opacity: 0.5;
+  cursor: default;
+}
+
+.nc-label {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  font-size: 0.7rem;
+  letter-spacing: 0.08em;
+  color: var(--ink-faint);
+}
+
+.nc-name {
+  font-family: var(--font-serif);
+  font-size: 0.9rem;
+  font-weight: 600;
+  color: var(--ink);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  max-width: 100%;
+}
+
+/* ---------- 抽屉 ---------- */
+
+.drawer-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 60;
+  background: rgba(22, 16, 32, 0.42);
+  backdrop-filter: blur(2px);
+  display: flex;
+}
+
+.drawer {
+  width: min(320px, 86vw);
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  background: var(--surface);
+  border-right: 1px solid var(--line);
+  box-shadow: var(--shadow-lg);
+  animation: slide-in 0.24s var(--ease);
+}
+
+@keyframes slide-in {
+  from { transform: translateX(-16px); opacity: 0; }
+  to { transform: translateX(0); opacity: 1; }
+}
+
+.drawer-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 14px 12px 14px 20px;
+  border-bottom: 1px solid var(--line);
+  font-family: var(--font-serif);
+  font-weight: 700;
+  font-size: 0.95rem;
+}
+
+.drawer-body {
   flex: 1;
-  position: relative;
-  height: 6px;
-  background: #e0e0e0;
-  border-radius: 3px;
+  min-height: 0;
+  padding: 16px 16px 24px;
   overflow: hidden;
 }
 
-.ip-progress {
-  position: absolute;
-  height: 100%;
-  background: #1a73e8;
-  border-radius: 3px;
-  transition: width 0.1s linear;
-  width: 0%;
+.drawer-body :deep(.toc) {
+  position: static;
+  max-height: none;
+  border-left: 0;
+  padding: 0;
 }
 
-.ip-progress-slider {
-  position: absolute;
-  width: 100%;
-  height: 100%;
-  opacity: 0;
-  cursor: pointer;
-  z-index: 1;
-  top: 0;
-  left: 0;
-  margin: 0;
+/* ---------- 响应式 ---------- */
+
+@media (min-width: 1400px) {
+  .article-grid {
+    grid-template-columns: minmax(0, 1fr) 176px;
+    max-width: 968px;
+  }
+  .toc-rail {
+    display: block;
+  }
+  .toc-btn {
+    display: none;
+  }
 }
 
-.ip-volume-control.hidden {
-  visibility: hidden;
-  opacity: 0;
-  height: 20px;
+@media (max-width: 1399px) {
+  .toc-btn {
+    display: inline-flex;
+  }
 }
 
-.ip-volume-control {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  padding: 0 5px;
-  width: 61.8%;
-  margin: 0 auto;
-  height: 20px;
-  transition: visibility 0.2s, opacity 0.2s;
+@media (max-width: 1023px) {
+  .article-page {
+    grid-template-columns: minmax(0, 1fr);
+  }
+  .chapter-rail {
+    display: none;
+  }
+  .rail-btn {
+    display: inline-flex;
+  }
+  .article-main {
+    padding: 0 22px 90px;
+  }
+  .toolbar {
+    margin: 0 -22px;
+    padding: 0 22px;
+    top: 0;
+  }
+  .read-progress {
+    margin: 0 -22px;
+  }
 }
 
-.ip-volume-label {
-  color: #666;
-  font-size: 0.85em;
-  min-width: 30px;
+@media (max-width: 768px) {
+  .toolbar {
+    top: calc(var(--topbar-h) + env(safe-area-inset-top, 0px));
+  }
+  .article-grid {
+    padding-top: 22px;
+  }
+  .chapter-nav {
+    grid-template-columns: 1fr;
+    gap: 10px;
+    margin-top: 40px;
+  }
+  .nav-card.is-next {
+    text-align: left;
+    align-items: flex-start;
+  }
+  .pdf-frame iframe {
+    height: calc(100vh - 260px);
+  }
 }
 
-.ip-volume-icon {
-  font-size: 0.9em;
-}
-
-.ip-volume-slider {
-  flex: 1;
-  height: 4px;
-  -webkit-appearance: none;
-  appearance: none;
-  background: #e0e0e0;
-  border-radius: 2px;
-  outline: none;
-}
-
-.ip-volume-slider::-webkit-slider-thumb {
-  -webkit-appearance: none;
-  width: 12px;
-  height: 12px;
-  background: #1a73e8;
-  border-radius: 50%;
-  cursor: pointer;
-}
-
-.pdf-container {
-  width: 100%;
-  max-width: 900px;
-  margin: 0.5rem auto 0;
-  padding: 0 1rem 1rem;
-  box-sizing: border-box;
-}
-
-.pdf-container iframe {
-  width: 100%;
-  height: calc(100vh - 100px);
-  min-height: 600px;
-  border: none;
-  border-radius: 8px;
-  box-shadow: 0 4px 12px rgba(0,0,0,0.15);
-  background: #fff;
-}
-
-.ip-volume-value {
-  color: #666;
-  font-size: 0.85em;
-  min-width: 35px;
-  text-align: right;
+@media (max-width: 430px) {
+  .aa-btn {
+    display: none;
+  }
+  .toolbar-inner {
+    gap: 8px;
+  }
 }
 </style>

@@ -1,390 +1,440 @@
 <template>
   <div class="page">
-    <h2>📊 状态</h2>
-    <p class="subtitle">内容获取来源</p>
+    <header class="page-head">
+      <p class="eyebrow">Connections</p>
+      <h1 class="page-title">状态</h1>
+      <p class="lede">
+        全站内容都来自 GitHub 仓库，页面本身不保存任何数据。
+        下面可以逐个测试连通性，或者查看内容标记的写法。
+      </p>
+    </header>
 
-    <div class="source-list">
-      <div class="source-item">
-        <div class="source-icon">📝</div>
-        <div class="source-info">
-          <div class="source-name">文章</div>
-          <div class="source-detail">
-            仓库：
-            <a :href="novelsUrl" target="_blank">{{ novelsUrl }}</a>
-          </div>
-          <div class="source-detail">目录：<code>{{ REPO_CONFIG.novels.baseDir }}</code></div>
+    <div class="source-grid">
+      <article v-for="source in sources" :key="source.key" class="source card">
+        <div class="src-head">
+          <span class="src-icon"><Icon :name="source.icon" :size="19" /></span>
+          <span class="src-name">{{ source.label }}</span>
+          <span class="badge" :class="`is-${status[source.key]}`">{{ statusText(status[source.key]) }}</span>
         </div>
-        <div class="source-action">
-          <button class="test-btn" :class="novelsStatus" :disabled="novelsStatus === 'testing'" @click="testRepo('novels')">
-            {{ statusText(novelsStatus) }}
-          </button>
-        </div>
-      </div>
 
-      <div class="source-item">
-        <div class="source-icon">🖼️</div>
-        <div class="source-info">
-          <div class="source-name">图片</div>
-          <div class="source-detail">
-            仓库：
-            <a :href="imagesUrl" target="_blank">{{ imagesUrl }}</a>
+        <dl class="src-meta">
+          <div class="meta-row">
+            <dt>仓库</dt>
+            <dd>
+              <a :href="source.url" target="_blank" rel="noreferrer">
+                {{ source.repo }}
+                <Icon name="external" :size="12" />
+              </a>
+            </dd>
           </div>
-          <div class="source-detail">目录：<code>{{ REPO_CONFIG.images.baseDir }}</code></div>
-        </div>
-        <div class="source-action">
-          <button class="test-btn" :class="imagesStatus" :disabled="imagesStatus === 'testing'" @click="testRepo('images')">
-            {{ statusText(imagesStatus) }}
-          </button>
-        </div>
-      </div>
+          <div class="meta-row">
+            <dt>目录</dt>
+            <dd><code>{{ source.dir || '根目录' }}</code></dd>
+          </div>
+        </dl>
 
-      <div class="source-item">
-        <div class="source-icon">🎵</div>
-        <div class="source-info">
-          <div class="source-name">音乐</div>
-          <div class="source-detail">
-            仓库：
-            <a :href="musicsUrl" target="_blank">{{ musicsUrl }}</a>
-          </div>
-          <div class="source-detail">目录：<code>{{ REPO_CONFIG.musics.baseDir || '根目录' }}</code></div>
-        </div>
-        <div class="source-action">
-          <button class="test-btn" :class="musicsStatus" :disabled="musicsStatus === 'testing'" @click="testRepo('musics')">
-            {{ statusText(musicsStatus) }}
-          </button>
-        </div>
-      </div>
+        <button
+          type="button"
+          class="btn btn-sm test-btn"
+          :disabled="status[source.key] === 'testing'"
+          @click="test(source.key)"
+        >
+          <Icon name="refresh" :size="13" />
+          {{ status[source.key] === 'testing' ? '测试中…' : '测试连接' }}
+        </button>
+      </article>
     </div>
 
-    <p class="note">
-      💡 所有内容均从 GitHub 仓库获取，文章和图片使用
-      <code>raw.githubusercontent.com</code> 直链访问，音乐使用下载链接播放。
-    </p>
+    <section class="section">
+      <div class="section-head">
+        <h2 class="section-title">调用限制</h2>
+      </div>
+      <ul class="limits">
+        <li class="limit-row">
+          <span class="limit-k"><Icon name="pulse" :size="15" /> 列表接口</span>
+          <span class="limit-v">未登录 60 次 / 小时，按 IP 计算</span>
+        </li>
+        <li class="limit-row">
+          <span class="limit-k"><Icon name="file" :size="15" /> 内容直链</span>
+          <span class="limit-v">raw.githubusercontent.com 不受 API 限额影响</span>
+        </li>
+        <li class="limit-row">
+          <span class="limit-k"><Icon name="clock" :size="15" /> 本地缓存</span>
+          <span class="limit-v">目录列表缓存 2 分钟，切换页面不会重复请求</span>
+        </li>
+      </ul>
+    </section>
 
-    <div class="usage-guide">
-      <h3>📖 文章内插入说明</h3>
-
-      <div class="guide-section">
-        <div class="guide-title">🖼️ 插入图片</div>
-        <div class="guide-content">
-          <p>在文章（<code>.md</code> 文件）中使用 Markdown 图片语法：</p>
-          <code>![](图片文件名.png)</code>
-          <p>图片文件需上传到仓库的 <code>images/</code> 目录。</p>
-          <p class="url-rule">📋 URL 替换规则（代码逻辑）：</p>
-          <ol>
-            <li>读取文章相对路径（如 <code>novels/ChinaRise.md</code>）</li>
-            <li>如果图片是相对路径（如 <code>![](隐忍.jpg)</code>）：<br>
-              → 自动拼接为 <code>images/隐忍.jpg</code><br>
-              → 生成完整 URL：<br>
-              <code>https://raw.githubusercontent.com/Plana-EpicTankCommander/sth_ineed/main/images/隐忍.jpg</code>
-            </li>
-            <li>如果图片是 GitHub blob 绝对链接（如 <code>![](https://github.com/.../blob/main/images/xxx.png)</code>）：<br>
-              → 自动转换为 <code>raw.githubusercontent.com</code> 直链
-            </li>
-            <li>如果图片是其他外部 URL → 保持不变</li>
-          </ol>
-        </div>
+    <section class="section">
+      <div class="section-head">
+        <h2 class="section-title">文章内插入语法</h2>
       </div>
 
-      <div class="guide-section">
-        <div class="guide-title">🎵 插入音乐播放器</div>
-        <div class="guide-content">
-          <p>在文章中使用音乐标记语法，<code>.mp3</code> 文件需上传到 <code>musicpage</code> 仓库根目录：</p>
-          <code>[music:歌曲名.mp3]</code>
-          <p>或带自定义标题（显示在播放器上）：</p>
-          <code>[music:歌曲名.mp3;title:我的标题]</code>
-          <p class="url-rule">📋 URL 替换规则（代码逻辑）：</p>
-          <ol>
-            <li>匹配 <code>[music:xxx.mp3]</code> 语法，支持文件名含中括号（如 <code>[TFR]瞄准强敌打！.mp3</code>）</li>
-            <li>在 <code>musicpage</code> 仓库根目录查找对应的 <code>.mp3</code> 文件</li>
-            <li>找到后生成直链：<br>
-              <code>https://raw.githubusercontent.com/Plana-EpicTankCommander/musicpage/main/歌曲名.mp3</code>
-            </li>
-            <li>自动渲染为嵌入式音乐播放器</li>
-          </ol>
+      <details class="doc">
+        <summary>
+          <Icon name="image" :size="16" />
+          <span class="doc-title">插入图片</span>
+          <Icon name="chevron-down" :size="15" class="doc-caret" />
+        </summary>
+        <div class="doc-body">
+          <p>在 <code>.md</code> 中使用 Markdown 图片语法，图片放在仓库的 <code>images/</code> 目录：</p>
+          <pre><code>![](图片文件名.png)
+![](图片文件名.png?w=50)</code></pre>
+          <p>路径末尾的 <code>?w=</code> 控制宽度百分比（1–150），默认 70%。相对路径会自动到 <code>images/</code> 查找，GitHub blob 链接会自动转成 raw 直链。</p>
         </div>
-      </div>
+      </details>
 
-      <div class="guide-section">
-        <div class="guide-title">🖼️ 画布图片（可缩放 / 平移）</div>
-        <div class="guide-content">
-          <p>在文章中写画布标记，图片会显示在一张固定大小的画布里，可滚轮缩放、拖动平移，且始终不会超出画布范围：</p>
-          <code>[canvas:图片名.png]</code>
-          <p>可选参数（用 <code>;</code> 分隔）：</p>
-          <code>[canvas:图片名.png;h:520;w:80;fit:cover;title:说明文字]</code>
-          <ul>
-            <li><code>h</code>：画布高度（px，默认 420，范围 160~1200）</li>
-            <li><code>w</code>：画布宽度百分比（默认 100，范围 20~100）</li>
-            <li><code>fit:cover</code>：铺满画布并裁切；默认 <code>contain</code> 完整显示整张图</li>
-            <li><code>title</code>：图片替代文字</li>
-          </ul>
-          <p>图片同样从 <code>images/</code> 目录读取，也支持 GitHub blob 链接和外部 URL。</p>
+      <details class="doc">
+        <summary>
+          <Icon name="music" :size="16" />
+          <span class="doc-title">插入音乐</span>
+          <Icon name="chevron-down" :size="15" class="doc-caret" />
+        </summary>
+        <div class="doc-body">
+          <p>在文章里写音乐标记，<code>.mp3</code> 放在 <code>musicpage</code> 仓库根目录：</p>
+          <pre><code>[music:歌曲名.mp3]
+[music:歌曲名.mp3;title:自定义标题]</code></pre>
+          <p>渲染后会得到一个内嵌音轨卡片，点击即交给底部播放器播放，和「声音」页共用同一个播放器。</p>
         </div>
-      </div>
-    </div>
+      </details>
+
+      <details class="doc">
+        <summary>
+          <Icon name="zoom" :size="16" />
+          <span class="doc-title">插入可缩放画布</span>
+          <Icon name="chevron-down" :size="15" class="doc-caret" />
+        </summary>
+        <div class="doc-body">
+          <p>图片会放进一张固定高度的画布，支持滚轮缩放、拖动平移、双击复位：</p>
+          <pre><code>[canvas:图片名.png]
+[canvas:图片名.png;h:520;w:80;fit:cover;title:说明文字]</code></pre>
+          <table>
+            <thead>
+              <tr><th>参数</th><th>含义</th><th>默认</th></tr>
+            </thead>
+            <tbody>
+              <tr><td><code>h</code></td><td>画布高度（160–1200 px）</td><td>420</td></tr>
+              <tr><td><code>w</code></td><td>画布宽度百分比（20–100）</td><td>100</td></tr>
+              <tr><td><code>fit</code></td><td><code>contain</code> 完整显示 / <code>cover</code> 铺满裁切</td><td>contain</td></tr>
+              <tr><td><code>title</code></td><td>图片替代文字</td><td>文件名</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </details>
+    </section>
   </div>
 </template>
 
 <script setup>
-import { ref } from 'vue'
+import { reactive } from 'vue'
+import Icon from '../components/ui/Icon.vue'
+import { REPO_CONFIG } from '../services/contentSource'
 
-const REPO_CONFIG = {
-  novels: {
-    owner: 'Plana-EpicTankCommander',
-    repo: 'sth_ineed',
-    branch: 'main',
-    baseDir: 'novels'
+const owner = REPO_CONFIG.novels.owner
+
+const sources = [
+  {
+    key: 'novels',
+    label: '文章',
+    icon: 'book',
+    repo: `${owner}/${REPO_CONFIG.novels.repo}`,
+    dir: REPO_CONFIG.novels.baseDir,
+    url: `https://github.com/${owner}/${REPO_CONFIG.novels.repo}`
   },
-  images: {
-    owner: 'Plana-EpicTankCommander',
-    repo: 'sth_ineed',
-    branch: 'main',
-    baseDir: 'images'
+  {
+    key: 'images',
+    label: '图片',
+    icon: 'image',
+    repo: `${owner}/${REPO_CONFIG.images.repo}`,
+    dir: REPO_CONFIG.images.baseDir,
+    url: `https://github.com/${owner}/${REPO_CONFIG.images.repo}`
   },
-  musics: {
-    owner: 'Plana-EpicTankCommander',
-    repo: 'musicpage',
-    branch: 'main',
-    baseDir: ''
+  {
+    key: 'musics',
+    label: '音乐',
+    icon: 'music',
+    repo: `${owner}/${REPO_CONFIG.musics.repo}`,
+    dir: REPO_CONFIG.musics.baseDir,
+    url: `https://github.com/${owner}/${REPO_CONFIG.musics.repo}`
   }
+]
+
+const status = reactive({ novels: 'idle', images: 'idle', musics: 'idle' })
+
+function statusText(value) {
+  if (value === 'testing') return '测试中'
+  if (value === 'ok') return '可连接'
+  if (value === 'fail') return '连接失败'
+  return '未测试'
 }
 
-const novelsUrl = `https://github.com/${REPO_CONFIG.novels.owner}/${REPO_CONFIG.novels.repo}`
-const imagesUrl = `https://github.com/${REPO_CONFIG.images.owner}/${REPO_CONFIG.images.repo}`
-const musicsUrl = `https://github.com/${REPO_CONFIG.musics.owner}/${REPO_CONFIG.musics.repo}`
-
-const novelsStatus = ref('idle')
-const imagesStatus = ref('idle')
-const musicsStatus = ref('idle')
-
-function statusText(s) {
-  if (s === 'idle') return '测试连接'
-  if (s === 'testing') return '测试中...'
-  if (s === 'ok') return '✓ 可连接'
-  if (s === 'fail') return '✗ 连接失败'
-  return s
-}
-
-async function testRepo(type) {
-  const statusRef = type === 'novels' ? novelsStatus : type === 'images' ? imagesStatus : musicsStatus
-  statusRef.value = 'testing'
-
-  const config = REPO_CONFIG[type]
-  const url = `https://api.github.com/repos/${config.owner}/${config.repo}`
-
+async function test(key) {
+  const config = REPO_CONFIG[key]
+  if (!config) return
+  status[key] = 'testing'
   try {
-    const res = await fetch(url, {
-      headers: { 'Accept': 'application/vnd.github.v3+json' }
+    const res = await fetch(`https://api.github.com/repos/${config.owner}/${config.repo}`, {
+      headers: { Accept: 'application/vnd.github.v3+json' }
     })
-    statusRef.value = res.ok ? 'ok' : 'fail'
+    status[key] = res.ok ? 'ok' : 'fail'
   } catch {
-    statusRef.value = 'fail'
+    status[key] = 'fail'
   }
 }
 </script>
 
 <style scoped>
-.page {
-  padding: 2rem;
-  max-width: 700px;
-  min-height: 100vh;
-  background-color: rgba(245, 245, 245, 0.85);
-  background-image: url('https://raw.githubusercontent.com/Plana-EpicTankCommander/sth_ineed/main/images/%E6%B0%B4%E7%9D%80%E6%99%AE%E6%8B%89%E5%A8%9C.png');
-  background-blend-mode: overlay;
-  background-repeat: no-repeat;
-  background-position: center right;
-  background-size: 30% auto;
-  background-attachment: fixed;
+.source-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(272px, 1fr));
+  gap: 16px;
 }
 
-h2 {
-  margin-bottom: 0.3rem;
-}
-
-.subtitle {
-  color: #888;
-  margin-top: 0;
-  margin-bottom: 1.5rem;
-}
-
-.source-list {
+.source {
   display: flex;
   flex-direction: column;
-  gap: 1rem;
+  gap: 14px;
+  padding: 20px;
 }
 
-.source-item {
+.src-head {
   display: flex;
   align-items: center;
-  gap: 1rem;
-  background: #f5f5f5;
-  padding: 1rem 1.2rem;
-  border-radius: 10px;
+  gap: 10px;
 }
 
-.source-icon {
-  font-size: 1.5rem;
-  flex-shrink: 0;
-  width: 2rem;
-  text-align: center;
+.src-icon {
+  width: 38px;
+  height: 38px;
+  display: grid;
+  place-items: center;
+  border-radius: 11px;
+  background: var(--accent-soft);
+  color: var(--accent);
 }
 
-.source-info {
+.src-name {
   flex: 1;
+  font-family: var(--font-serif);
+  font-size: 1.02rem;
+  font-weight: 700;
+}
+
+.badge {
+  padding: 3px 9px;
+  border-radius: var(--radius-pill);
+  font-size: 0.68rem;
+  letter-spacing: 0.04em;
+  background: var(--surface-2);
+  color: var(--ink-faint);
+}
+
+.badge.is-ok {
+  background: var(--accent-soft);
+  color: var(--accent-ink);
+}
+
+.badge.is-fail {
+  background: var(--accent-2-soft);
+  color: var(--accent-2);
+}
+
+.badge.is-testing {
+  background: var(--surface-2);
+  color: var(--ink-soft);
+}
+
+.src-meta {
+  display: flex;
+  flex-direction: column;
+  gap: 7px;
+  margin: 0;
+  font-size: 0.8rem;
+}
+
+.meta-row {
+  display: flex;
+  gap: 10px;
   min-width: 0;
 }
 
-.source-action {
+.meta-row dt {
   flex-shrink: 0;
-  display: flex;
-  align-items: center;
+  width: 34px;
+  color: var(--ink-faint);
 }
 
-.source-name {
-  font-size: 1rem;
-  font-weight: bold;
-  color: #333;
-  margin-bottom: 0.3rem;
-}
-
-.source-detail {
-  display: flex;
-  align-items: center;
-  gap: 0.5rem;
-  flex-wrap: wrap;
-  font-size: 0.85rem;
-  color: #666;
-  margin-bottom: 0.2rem;
-}
-
-.source-detail > a {
-  flex: 1;
+.meta-row dd {
+  margin: 0;
   min-width: 0;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-  color: #4a90e2;
-  text-decoration: none;
+  color: var(--ink-soft);
+  overflow-wrap: break-word;
+  line-height: 1.5;
 }
 
-.source-detail > a:hover {
+.meta-row a {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  color: var(--accent-ink);
+}
+
+.meta-row a:hover {
   text-decoration: underline;
 }
 
-.source-detail code {
-  background: #e8e8e8;
-  padding: 0.1rem 0.4rem;
+.meta-row code {
+  font-family: ui-monospace, SFMono-Regular, Consolas, monospace;
+  font-size: 0.9em;
+  padding: 1px 5px;
   border-radius: 4px;
-  font-size: 0.85em;
+  background: var(--surface-2);
 }
 
 .test-btn {
-  padding: 0.2rem 0.6rem;
-  border: 1px solid #ccc;
-  border-radius: 6px;
-  background: #fff;
+  align-self: flex-start;
+}
+
+.limits {
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  background: var(--surface);
+  overflow: hidden;
+}
+
+.limit-row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 10px;
+  padding: 14px 18px;
+}
+
+.limit-row + .limit-row {
+  border-top: 1px solid var(--line);
+}
+
+.limit-k {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  width: 120px;
+  font-size: 0.84rem;
+  font-weight: 600;
+  color: var(--ink);
+}
+
+.limit-v {
+  font-size: 0.82rem;
+  color: var(--ink-soft);
+}
+
+.doc {
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  background: var(--surface);
+  margin-bottom: 10px;
+  overflow: hidden;
+}
+
+.doc + .doc {
+  margin-top: 10px;
+}
+
+.doc summary {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 15px 18px;
   cursor: pointer;
-  font-size: 0.8rem;
-  transition: all 0.2s;
-}
-
-.test-btn:hover:not(:disabled) {
-  background: #eee;
-}
-
-.test-btn:disabled {
-  cursor: default;
-  opacity: 0.7;
-}
-
-.test-btn.ok {
-  background: #d4edda;
-  border-color: #28a745;
-  color: #155724;
-}
-
-.test-btn.fail {
-  background: #f8d7da;
-  border-color: #dc3545;
-  color: #721c24;
-}
-
-.note {
-  margin-top: 1.5rem;
-  font-size: 0.85rem;
-  color: #888;
-  background: #f9f9f9;
-  padding: 1rem;
-  border-radius: 8px;
-  border-left: 3px solid #4a90e2;
-}
-
-.note code {
-  background: #e8e8e8;
-  padding: 0.1rem 0.4rem;
-  border-radius: 4px;
-  font-size: 0.85em;
-}
-
-.usage-guide {
-  margin-top: 2rem;
-}
-
-.usage-guide h3 {
-  margin-bottom: 1rem;
-  color: #333;
-}
-
-.guide-section {
-  background: #f9f9f9;
-  border-radius: 10px;
-  padding: 1rem 1.2rem;
-  margin-bottom: 1rem;
-}
-
-.guide-title {
-  font-weight: bold;
-  color: #333;
-  margin-bottom: 0.5rem;
-}
-
-.guide-content {
+  list-style: none;
   font-size: 0.9rem;
-  color: #666;
+  color: var(--ink);
+  transition: background var(--fast);
 }
 
-.guide-content p {
-  margin: 0.4rem 0;
+.doc summary::-webkit-details-marker {
+  display: none;
 }
 
-.guide-content code {
-  background: #e8e8e8;
-  padding: 0.15rem 0.4rem;
-  border-radius: 4px;
+.doc summary:hover {
+  background: var(--surface-2);
+}
+
+.doc-title {
+  flex: 1;
+  font-weight: 600;
+}
+
+.doc-caret {
+  color: var(--ink-faint);
+  transition: transform var(--fast);
+}
+
+.doc[open] .doc-caret {
+  transform: rotate(180deg);
+}
+
+.doc-body {
+  padding: 0 18px 18px;
+  font-size: 0.86rem;
+  line-height: 1.8;
+  color: var(--ink-soft);
+}
+
+.doc-body p {
+  margin: 8px 0;
+}
+
+.doc-body code {
+  font-family: ui-monospace, SFMono-Regular, Consolas, monospace;
   font-size: 0.9em;
-  word-break: break-all;
+  padding: 1px 5px;
+  border-radius: 4px;
+  background: var(--surface-2);
+  color: var(--accent-ink);
 }
 
-.guide-content .url-rule {
-  font-weight: bold;
-  margin-top: 0.6rem;
-  color: #444;
+.doc-body pre {
+  margin: 10px 0;
+  padding: 12px 14px;
+  border-radius: var(--radius-sm);
+  background: var(--surface-2);
+  border: 1px solid var(--line);
+  overflow-x: auto;
+  font-size: 0.82rem;
+  line-height: 1.7;
 }
 
-.guide-content ol {
-  margin: 0.3rem 0 0 1.2rem;
-  padding-left: 0.5rem;
+.doc-body pre code {
+  padding: 0;
+  background: none;
+  color: var(--ink);
 }
 
-.guide-content ul {
-  margin: 0.3rem 0 0 1.2rem;
-  padding-left: 0.5rem;
+.doc-body table {
+  width: 100%;
+  border-collapse: collapse;
+  margin-top: 10px;
+  font-size: 0.8rem;
 }
 
-.guide-content li {
-  margin: 0.3rem 0;
-  color: #666;
-  font-size: 0.85em;
-  line-height: 1.5;
+.doc-body th,
+.doc-body td {
+  border: 1px solid var(--line);
+  padding: 7px 10px;
+  text-align: left;
+}
+
+.doc-body th {
+  background: var(--surface-2);
+  font-weight: 600;
+  color: var(--ink);
+}
+
+@media (max-width: 640px) {
+  .limit-k {
+    width: auto;
+  }
 }
 </style>

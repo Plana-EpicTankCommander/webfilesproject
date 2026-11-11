@@ -1,14 +1,22 @@
-# 古明地灵殿
+# 古明地灵殿 · Chireiden Archive
 
-一个展示文章、图片和音乐的静态网站，数据全部托管在 GitHub 仓库。
+一个展示文章、图片和音乐的静态网站，数据全部托管在 GitHub 仓库。前端只负责取数据与排版，不保存任何内容。
 
 ## 功能
 
-- **📝 文章**：从 GitHub 仓库读取 Markdown 文件，支持插入图片和音乐播放器
-- **🔍 画布**：图片在固定画布中缩放、平移，始终不会超出画布范围
-- **🖼️ 图片**：展示图片画廊，点击可预览大图
-- **🎵 音乐**：音乐播放器，支持暂停/播放、音量控制、进度拖动
-- **📊 状态**：查看数据来源仓库和连接状态
+- **📝 文章** — 从 GitHub 读取 Markdown / PDF，按文件夹分组，支持文内目录、上一篇/下一篇、字号调整、阅读进度
+- **🖼️ 画布** — 图片在固定画布中缩放、平移，始终不会超出画布，支持滚轮、拖动、双击与键盘
+- **🖼️ 图片** — 网格画廊，点击进入灯箱：缩放平移、左右切换、缩略图条、新窗口看原图
+- **🎵 音乐** — 全局底部播放器，列表循环 / 单曲 / 随机、音量记忆；文章内嵌音轨与音乐页共用同一个播放器
+- **📊 状态** — 数据源连通性测试、API 限额说明与文章标记语法速查
+
+## 界面设计
+
+- **浅色「纸」为默认主题**，深色「夜」可一键切换并记住选择
+- 视觉语言：靛紫主色（觉之瞳）+ 绯红点缀 + 低饱和纸感底色；正文用衬线字体，界面用系统无衬线
+- 设计变量集中在 `src/styles/tokens.css`，改一处即可换肤
+- 图标全部为自绘内联 SVG（`src/components/ui/Icon.vue`），没有图标字体或第三方 UI 库
+- 响应式三档：桌面「侧栏 + 正文 + 目录」、平板图标栏、手机顶栏 + 底部 Tab + 抽屉目录
 
 ## 文章内插入说明
 
@@ -55,6 +63,8 @@
 - 自动转换为 `raw.githubusercontent.com` 直链
 - 支持文件名含中括号（如 `[TFR]瞄准强敌打！.mp3`）
 
+渲染出的音轨卡片点击后交给页面底部的全局播放器，和「声音」页共用同一个队列。
+
 ### 🖼️ 插入画布图片（可缩放 / 平移）
 
 在文章中写画布标记，图片会显示在一张固定大小的画布中：
@@ -82,9 +92,30 @@
 
 ## 技术栈
 
-- Vue 3 + Vite + Vue Router + Pinia
-- GitHub API（获取文件列表，有 60次/小时 限制）
-- raw.githubusercontent.com（获取内容，绕过 API 限制）
+- Vue 3 + Vite + Vue Router（hash 模式）+ Pinia
+- Pinia 只做一件事：全局播放器状态（`src/stores/player.js`）
+- GitHub API（获取文件列表，未登录 60 次/小时，已加 2 分钟缓存）
+- raw.githubusercontent.com（获取正文/图片/音频，绕过 API 限制）
+- 无 UI 框架、无图标库、无 CSS 预处理器，产物只有一个入口 chunk + 按页懒加载
+
+## 目录结构
+
+```
+src/
+├── components/
+│   ├── article/   ChapterTree.vue  ArticleToc.vue
+│   ├── gallery/   Lightbox.vue
+│   ├── layout/    SideNav.vue  MobileTabBar.vue
+│   ├── player/    PlayerBar.vue  InlineTrack.vue
+│   ├── ui/        Icon.vue
+│   └── ImageCanvas/ImageCanvas.vue
+├── composables/   useTheme.js
+├── services/      contentSource.js
+├── stores/        player.js
+├── styles/        tokens.css  base.css  markdown.css
+├── views/         Home / Article / Image / Sound / Status / Dev
+└── router/        index.js
+```
 
 ## 开发
 
@@ -102,6 +133,8 @@ npm run build
 npm run preview
 ```
 
+> 构建产物在 `dist/`，如果站点由 GitHub Pages 托管，改完需要重新 `npm run build` 并提交 `dist/`。
+
 ## 数据来源
 
 | 内容 | 仓库 | 目录 |
@@ -112,6 +145,7 @@ npm run preview
 
 ## 注意事项
 
-- GitHub API 未认证上限为 60次/小时，已加入 2 分钟缓存机制
+- GitHub API 未认证上限为 60 次/小时，已加入 2 分钟缓存；触发限流时页面会提示并给出「重试」
 - 图片使用前需确保已上传到对应仓库的 `images/` 目录
 - 音乐文件需上传到 `musicpage` 仓库根目录
+- 播放器默认音量 10%，音量与循环模式会记在 localStorage

@@ -1,0 +1,90 @@
+/* ===========================================================
+   设计变量 —— 古明地灵殿 / Chireiden Archive
+   浅色（纸）为默认主题，深色（夜）可切换
+   =========================================================== */
+
+:root {
+  color-scheme: light;
+
+  /* 底色与表面 */
+  --bg: #f7f3ec;
+  --bg-glow-a: rgba(107, 74, 174, 0.1);
+  --bg-glow-b: rgba(201, 79, 94, 0.06);
+  --surface: #fffdfa;
+  --surface-2: #f1ebe1;
+  --surface-3: #e9e1d4;
+
+  /* 文字 */
+  --ink: #262130;
+  --ink-soft: #6b6377;
+  --ink-faint: #9c93a8;
+
+  /* 线条 */
+  --line: #e7dfd2;
+  --line-strong: #d6cbb9;
+
+  /* 强调色：觉之瞳的紫，配一点绯 */
+  --accent: #6b4aae;
+  --accent-strong: #563a91;
+  --accent-ink: #4a2f80;
+  --accent-soft: #eee8fa;
+  --accent-2: #c0505f;
+  --accent-2-soft: #fbe9ec;
+
+  /* 阴影 */
+  --shadow-sm: 0 1px 2px rgba(38, 33, 48, 0.05), 0 6px 16px rgba(38, 33, 48, 0.05);
+  --shadow-md: 0 2px 6px rgba(38, 33, 48, 0.06), 0 18px 46px rgba(38, 33, 48, 0.1);
+  --shadow-lg: 0 30px 80px rgba(30, 24, 44, 0.28);
+
+  /* 圆角与间距 */
+  --radius-sm: 10px;
+  --radius: 16px;
+  --radius-lg: 24px;
+  --radius-pill: 999px;
+
+  /* 字体 */
+  --font-ui: system-ui, -apple-system, 'Segoe UI', 'PingFang SC', 'Hiragino Sans GB', 'Microsoft YaHei', sans-serif;
+  --font-serif: 'Songti SC', 'Noto Serif SC', 'Source Han Serif SC', 'Noto Serif CJK SC', SimSun, 'Times New Roman', serif;
+
+  /* 布局 */
+  --sidebar-w: 226px;
+  --rail-w: 228px;
+  --toc-w: 196px;
+  --player-h: 78px;
+  --tabbar-h: 58px;
+  --topbar-h: 54px;
+  --page-max: 1080px;
+
+  /* 动效 */
+  --ease: cubic-bezier(0.22, 0.61, 0.36, 1);
+  --fast: 0.16s;
+}
+
+[data-theme='dark'] {
+  color-scheme: dark;
+
+  --bg: #12101a;
+  --bg-glow-a: rgba(139, 108, 220, 0.16);
+  --bg-glow-b: rgba(224, 122, 134, 0.08);
+  --surface: #1b1726;
+  --surface-2: #221d30;
+  --surface-3: #2a2338;
+
+  --ink: #ece7f6;
+  --ink-soft: #a79eba;
+  --ink-faint: #7d7490;
+
+  --line: #2e273c;
+  --line-strong: #3d3450;
+
+  --accent: #a98bf5;
+  --accent-strong: #c0a9ff;
+  --accent-ink: #cbb8ff;
+  --accent-soft: #2a2342;
+  --accent-2: #e58b97;
+  --accent-2-soft: #3a2630;
+
+  --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.3), 0 6px 18px rgba(0, 0, 0, 0.25);
+  --shadow-md: 0 2px 8px rgba(0, 0, 0, 0.35), 0 20px 50px rgba(0, 0, 0, 0.4);
+  --shadow-lg: 0 30px 90px rgba(0, 0, 0, 0.6);
+}

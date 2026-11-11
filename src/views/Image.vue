@@ -1,203 +1,255 @@
 <template>
-  <div class="page-with-sidenav">
-    <!-- 图片目录侧边栏 -->
-    <aside class="sidenav">
-      <div class="sidenav-title">图片目录</div>
-      <div class="sidenav-list">
-        <div
-          v-for="(items, category) in grouped"
-          :key="category"
-          class="sidenav-category"
-        >
-          <div class="category-label">{{ category }}</div>
-          <div
-            v-for="item in items"
-            :key="item.path"
-            class="sidenav-item"
-            :class="{ active: selectedFile === item.path }"
-            @click="preview(item)"
-          >
-            {{ item.displayName }}
-          </div>
-        </div>
-      </div>
-    </aside>
+  <div class="page">
+    <header class="page-head">
+      <p class="eyebrow">Gallery</p>
+      <h1 class="page-title">画中景</h1>
+      <p class="lede">
+        仓库 <code class="inline-code">images/</code> 里的全部图片，共
+        <strong>{{ items.length || '—' }}</strong> 张。点击任意一张进入大图，画布支持滚轮缩放与拖动平移。
+      </p>
+    </header>
 
-    <!-- 图片预览 -->
-    <div class="content-area">
-      <div v-if="loading" class="loading">加载中...</div>
-      <div v-else-if="error" class="error">{{ error }}</div>
-      <div v-else-if="previewItem" class="image-container">
-        <ImageCanvas
-          :src="previewItem.proxyUrl"
-          :alt="previewItem.displayName"
-          height="calc(100vh - 220px)"
-        />
-      </div>
-      <div v-else class="empty">请从左侧选择图片</div>
+    <div class="gallery-bar">
+      <span class="chip">
+        <Icon name="image" :size="13" />
+        {{ items.length }} 张
+      </span>
+      <button type="button" class="btn btn-ghost btn-sm" :disabled="!items.length" @click="openRandom">
+        <Icon name="shuffle" :size="15" />
+        随便看一张
+      </button>
     </div>
+
+    <div v-if="loading" class="grid">
+      <div v-for="n in 8" :key="n" class="skeleton tile-skeleton" />
+    </div>
+
+    <div v-else-if="error" class="notice notice-error">
+      <Icon name="alert" :size="18" />
+      <span class="err-text">{{ error }}</span>
+      <button type="button" class="btn btn-sm" @click="load">
+        <Icon name="refresh" :size="14" />
+        重试
+      </button>
+    </div>
+
+    <div v-else-if="items.length" class="grid">
+      <button
+        v-for="(item, i) in items"
+        :key="item.name"
+        type="button"
+        class="tile"
+        @click="open(i)"
+      >
+        <img :src="item.url" :alt="item.displayName" loading="lazy" decoding="async" />
+        <span class="tile-cap">{{ item.displayName }}</span>
+      </button>
+    </div>
+
+    <div v-else class="empty-state">
+      <span class="es-icon"><Icon name="image" :size="24" /></span>
+      <p class="es-title">还没有图片</p>
+      <p class="es-text">把图片上传到仓库的 images/ 目录即可出现在这里。</p>
+    </div>
+
+    <Lightbox
+      v-model:index="lightboxIndex"
+      :items="items"
+      @close="closeLightbox"
+    />
   </div>
 </template>
 
 <script setup>
-import { ref, computed, onMounted } from 'vue'
-import ImageCanvas from '../components/ImageCanvas/ImageCanvas.vue'
-import { listFiles, getImageUrl, groupFiles } from '../services/contentSource'
+import { onMounted, ref, watch } from 'vue'
+import { useRoute, useRouter } from 'vue-router'
+import Icon from '../components/ui/Icon.vue'
+import Lightbox from '../components/gallery/Lightbox.vue'
+import { listFiles, itemImageUrl } from '../services/contentSource'
 
-const files = ref([])
-const selectedFile = ref('')
-const previewItem = ref(null)
-const loading = ref(false)
+const route = useRoute()
+const router = useRouter()
+
+const items = ref([])
+const loading = ref(true)
 const error = ref('')
+const lightboxIndex = ref(-1)
 
-onMounted(async () => {
-  loading.value = true
-  try {
-    const data = await listFiles('images')
-    files.value = data.map(f => ({
-      ...f,
-      displayName: f.name.replace(/\.[^.]+$/, '')
-    }))
-  } catch (e) {
-    error.value = e.message
-  } finally {
-    loading.value = false
+onMounted(load)
+
+watch(
+  () => route.query.img,
+  () => {
+    if (route.query.img) openByName(String(route.query.img))
   }
-})
+)
 
-const grouped = computed(() => {
-  const groups = groupFiles(files.value, 'images')
-  const map = {}
-  for (const g of groups) {
-    map[g.title] = g.items.map(f => ({
-      ...f,
-      displayName: f.name.replace(/\.[^.]+$/, '')
-    }))
-  }
-  return map
-})
-
-async function preview(item) {
-  if (!item) return
-  selectedFile.value = item.path
+async function load() {
   loading.value = true
-  previewItem.value = null
   error.value = ''
   try {
-    const url = await getImageUrl('images', item.path.replace(/^images\//, ''))
-    previewItem.value = { ...item, proxyUrl: url }
+    const data = await listFiles('images')
+    items.value = data.map((item) => ({
+      name: item.name,
+      displayName: item.name.replace(/\.[^.]+$/, ''),
+      url: itemImageUrl(item)
+    }))
+    openByName(route.query.img ? String(route.query.img) : '')
   } catch (e) {
-    error.value = e.message
+    error.value = `图片列表加载失败：${e.message}`
   } finally {
     loading.value = false
   }
+}
+
+function openByName(name) {
+  if (!name) return
+  const target = items.value.findIndex((item) => item.name === name || item.displayName === name)
+  if (target >= 0) lightboxIndex.value = target
+}
+
+function open(index) {
+  lightboxIndex.value = index
+  const item = items.value[index]
+  if (item) {
+    router.replace({ path: '/image', query: { img: item.name } }).catch(() => {})
+  }
+}
+
+function openRandom() {
+  if (!items.value.length) return
+  open(Math.floor(Math.random() * items.value.length))
+}
+
+function closeLightbox() {
+  lightboxIndex.value = -1
+  if (route.query.img) router.replace({ path: '/image' }).catch(() => {})
 }
 </script>
 
 <style scoped>
-.page-with-sidenav {
+.inline-code {
+  font-family: ui-monospace, SFMono-Regular, Consolas, monospace;
+  font-size: 0.88em;
+  padding: 0.1em 0.4em;
+  border-radius: 5px;
+  background: var(--surface-2);
+  color: var(--accent-ink);
+}
+
+.gallery-bar {
   display: flex;
-  min-height: 100vh;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 18px;
 }
 
-.sidenav {
-  width: 160px;
-  background: #1a1a1a;
+.grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(196px, 1fr));
+  gap: 14px;
+}
+
+.tile-skeleton {
+  aspect-ratio: 4 / 3;
+  border-radius: var(--radius);
+}
+
+.tile {
+  position: relative;
+  display: block;
+  padding: 0;
+  overflow: hidden;
+  border-radius: var(--radius);
+  background: var(--surface-2);
+  aspect-ratio: 4 / 3;
+  box-shadow: var(--shadow-sm);
+  transition: transform var(--fast), box-shadow var(--fast);
+}
+
+.tile:hover {
+  transform: translateY(-2px);
+  box-shadow: var(--shadow-md);
+}
+
+.tile img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  transition: transform 0.5s var(--ease);
+}
+
+.tile:hover img {
+  transform: scale(1.04);
+}
+
+.tile-cap {
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  padding: 26px 12px 10px;
+  font-size: 0.72rem;
   color: #fff;
-  padding: 1rem 0;
-  flex-shrink: 0;
-  overflow-y: auto;
-  height: 100vh;
-  position: sticky;
-  top: 0;
+  text-align: left;
+  background: linear-gradient(to top, rgba(18, 12, 28, 0.76), transparent);
+  opacity: 0;
+  transition: opacity var(--fast);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
-.sidenav-title {
-  font-size: 0.8rem;
-  color: #888;
-  padding: 0 0.8rem 0.6rem;
-  border-bottom: 1px solid #333;
-  margin-bottom: 0.6rem;
+.tile:hover .tile-cap,
+.tile:focus-visible .tile-cap {
+  opacity: 1;
 }
 
-.sidenav-list {
-  overflow-y: auto;
-  max-height: calc(100vh - 60px);
-}
-
-.sidenav-category {
-  margin-bottom: 0.5rem;
-}
-
-.category-label {
-  font-size: 0.75rem;
-  color: #666;
-  padding: 0.3rem 0.8rem;
-}
-
-.sidenav-item {
-  padding: 0.4rem 0.8rem;
-  font-size: 0.8rem;
-  color: #aaa;
-  cursor: pointer;
-  border-radius: 4px;
-  margin: 0.1rem 0.3rem;
-  transition: background 0.2s, color 0.2s;
-  word-break: break-all;
-}
-
-.sidenav-item:hover {
-  background: #333;
-  color: #fff;
-}
-
-.sidenav-item.active {
-  background: #4a90e2;
-  color: #fff;
-}
-
-.content-area {
+.err-text {
   flex: 1;
-  padding: 2rem 0;
-  min-width: 0;
-  display: flex;
-  flex-direction: column;
-  background-color: rgba(245, 245, 245, 0.85);
-  background-image: url('https://raw.githubusercontent.com/Plana-EpicTankCommander/sth_ineed/main/images/%E6%B0%B4%E7%9D%80%E6%99%AE%E6%8B%89%E5%A8%9C.png');
-  background-blend-mode: overlay;
-  background-repeat: no-repeat;
-  background-position: center right;
-  background-size: 30% auto;
-  background-attachment: fixed;
 }
 
-.loading, .error, .empty {
-  align-self: center;
-  width: 100%;
-  max-width: 900px;
-  padding: 1rem;
-  border-radius: 8px;
+.empty-state {
+  padding: 64px 24px;
   text-align: center;
-  margin: 0 auto;
+  border-radius: var(--radius);
+  border: 1px dashed var(--line-strong);
 }
 
-.loading { background: #f0f0f0; color: #666; }
-.error { background: #ffe0e0; color: #c00; }
-.empty { background: #f9f9f9; color: #999; }
-
-.image-container {
-  display: flex;
-  align-items: flex-start;
-  justify-content: center;
-  min-height: 50vh;
-  width: 100%;
-  max-width: 1200px;
-  margin: 0 auto;
-  box-sizing: border-box;
-  padding: 2rem;
+.es-icon {
+  display: inline-grid;
+  place-items: center;
+  width: 54px;
+  height: 54px;
+  border-radius: 50%;
+  background: var(--accent-soft);
+  color: var(--accent);
+  margin-bottom: 14px;
 }
 
-.image-container :deep(.image-canvas) {
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+.es-title {
+  font-family: var(--font-serif);
+  font-size: 1.05rem;
+  font-weight: 600;
+}
+
+.es-text {
+  margin-top: 6px;
+  font-size: 0.85rem;
+  color: var(--ink-faint);
+}
+
+@media (hover: none) {
+  .tile-cap {
+    opacity: 1;
+  }
+}
+
+@media (max-width: 900px) {
+  .grid {
+    grid-template-columns: repeat(auto-fill, minmax(146px, 1fr));
+    gap: 10px;
+  }
 }
 </style>

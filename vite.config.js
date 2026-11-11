@@ -6,6 +6,10 @@ export default defineConfig({
   plugins: [vue()],
   server: {
     port: 5173,
-    host: true
+    host: true,
+    watch: {
+      // 编辑器原子写入会短暂产生 .xxx.tmpdir 目录，Windows 下 watch 它会 EBUSY
+      ignored: ['**/*.tmpdir/**', '**/.git/**']
+    }
   }
 })

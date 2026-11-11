@@ -1,180 +1,347 @@
 <template>
-  <div class="page-with-sidenav">
-    <!-- 声音目录侧边栏 -->
-    <aside class="sidenav">
-      <div class="sidenav-title">音乐目录</div>
-      <div class="sidenav-list">
-        <div
-          v-for="item in items"
-          :key="item.path"
-          class="sidenav-item"
-          :class="{ active: selectedName === item.name }"
-          @click="play(item)"
-        >
-          {{ item.displayName }}
-        </div>
-      </div>
-    </aside>
+  <div class="page">
+    <header class="page-head">
+      <p class="eyebrow">Sound</p>
+      <h1 class="page-title">耳畔</h1>
+      <p class="lede">
+        {{ items.length || '—' }} 首曲子，来自 <code class="inline-code">musicpage</code> 仓库。
+        点击任意一首开始，播放器会固定在页面底部。
+      </p>
+    </header>
 
-    <!-- 播放器 -->
-    <div class="content-area">
-      <div v-if="loading" class="loading">加载中...</div>
-      <div v-else-if="error" class="error">{{ error }}</div>
-      <div v-else-if="current" class="player-card">
-        <div class="player-title">正在播放：{{ current.displayName }}</div>
-        <audio controls ref="audioRef" :src="current.downloadUrl"></audio>
-      </div>
-      <div v-else class="empty">请从左侧选择音乐</div>
+    <div class="sound-bar">
+      <button type="button" class="btn btn-primary" :disabled="!items.length" @click="playAll">
+        <Icon name="play" :size="15" fill />
+        全部播放
+      </button>
+      <button type="button" class="btn" :disabled="!items.length" @click="shuffleAll">
+        <Icon name="shuffle" :size="15" />
+        随机播放
+      </button>
+      <span class="volume-hint">
+        <Icon name="volume" :size="14" />
+        默认音量 10%，可在播放器上调节
+      </span>
+    </div>
+
+    <div v-if="loading" class="track-card card">
+      <div v-for="n in 4" :key="n" class="skeleton track-skeleton" />
+    </div>
+
+    <div v-else-if="error" class="notice notice-error">
+      <Icon name="alert" :size="18" />
+      <span class="err-text">{{ error }}</span>
+      <button type="button" class="btn btn-sm" @click="load">
+        <Icon name="refresh" :size="14" />
+        重试
+      </button>
+    </div>
+
+    <ol v-else-if="items.length" class="track-card card">
+      <li v-for="(track, i) in items" :key="track.src">
+        <button
+          type="button"
+          class="track"
+          :class="{ 'is-active': player.current?.src === track.src }"
+          @click="play(track, i)"
+        >
+          <span class="t-index">
+            <span v-if="player.current?.src === track.src" class="t-eq" :class="{ 'is-paused': !player.playing }">
+              <i /><i /><i />
+            </span>
+            <span v-else>{{ String(i + 1).padStart(2, '0') }}</span>
+          </span>
+
+          <span class="t-main">
+            <span class="t-title">{{ track.title }}</span>
+            <span v-if="track.tag" class="t-tag">{{ track.tag }}</span>
+          </span>
+
+          <span class="t-action">
+            <Icon
+              :name="player.current?.src === track.src && player.playing ? 'pause' : 'play'"
+              :size="14"
+              :stroke-width="player.current?.src === track.src && player.playing ? 2.4 : 1.5"
+              :fill="!(player.current?.src === track.src && player.playing)"
+            />
+          </span>
+        </button>
+      </li>
+    </ol>
+
+    <div v-else class="empty-state">
+      <span class="es-icon"><Icon name="music" :size="24" /></span>
+      <p class="es-title">还没有曲子</p>
+      <p class="es-text">把 .mp3 上传到 musicpage 仓库根目录即可。</p>
     </div>
   </div>
 </template>
 
 <script setup>
-import { ref, onMounted } from 'vue'
-import { listFiles, getMusicUrl } from '../services/contentSource'
+import { onMounted, ref } from 'vue'
+import Icon from '../components/ui/Icon.vue'
+import { usePlayerStore } from '../stores/player'
+import { listFiles, itemMusicUrl } from '../services/contentSource'
+
+const player = usePlayerStore()
 
 const items = ref([])
-const current = ref(null)
-const selectedName = ref('')
 const loading = ref(true)
 const error = ref('')
 
-const audioRef = ref(null)
+onMounted(load)
 
-onMounted(async () => {
-  try {
-    const data = await listFiles('musics')
-    items.value = data.map(f => ({
-      ...f,
-      displayName: f.name.replace(/\.mp3$/, '').replace(/^\[/, '【').replace(/\]/, '】')
-    }))
-  } catch (e) {
-    error.value = e.message
-  } finally {
-    loading.value = false
-  }
-})
+function parseTitle(name) {
+  const base = name.replace(/\.mp3$/i, '')
+  const match = base.match(/^\[([^\]]+)\]\s*(.+)$/) || base.match(/^【([^】]+)】\s*(.+)$/)
+  if (match) return { tag: match[1], title: match[2] }
+  return { tag: '', title: base }
+}
 
-async function play(item) {
-  selectedName.value = item.name
+async function load() {
   loading.value = true
   error.value = ''
-  current.value = null
   try {
-    const url = await getMusicUrl('musics', item.path)
-    current.value = { ...item, downloadUrl: url }
-    // 等音频加载完再设置音量
-    await new Promise(resolve => setTimeout(resolve, 100))
-    if (audioRef.value) {
-      audioRef.value.volume = 0.1
-    }
+    const data = await listFiles('musics')
+    items.value = data.map((item) => {
+      const parsed = parseTitle(item.name)
+      return {
+        ...parsed,
+        name: item.name,
+        src: itemMusicUrl(item)
+      }
+    })
   } catch (e) {
-    error.value = e.message
+    error.value = `曲目列表加载失败：${e.message}`
   } finally {
     loading.value = false
   }
+}
+
+function play(track, index) {
+  if (player.current?.src === track.src) {
+    player.toggle()
+    return
+  }
+  player.playQueue(items.value, index)
+}
+
+function playAll() {
+  if (!items.value.length) return
+  if (player.loop === 'shuffle') player.cycleLoop()
+  player.playQueue(items.value, 0)
+}
+
+function shuffleAll() {
+  if (!items.value.length) return
+  if (player.loop !== 'shuffle') player.cycleLoop()
+  player.playQueue(items.value, Math.floor(Math.random() * items.value.length))
 }
 </script>
 
 <style scoped>
-.page-with-sidenav {
+.page {
+  max-width: 920px;
+}
+
+.inline-code {
+  font-family: ui-monospace, SFMono-Regular, Consolas, monospace;
+  font-size: 0.88em;
+  padding: 0.1em 0.4em;
+  border-radius: 5px;
+  background: var(--surface-2);
+  color: var(--accent-ink);
+}
+
+.sound-bar {
   display: flex;
-  min-height: 100vh;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 20px;
 }
 
-.sidenav {
-  width: 160px;
-  background: #1a1a1a;
-  color: #fff;
-  padding: 1rem 0;
+.volume-hint {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  margin-left: auto;
+  font-size: 0.72rem;
+  color: var(--ink-faint);
+}
+
+.track-card {
+  overflow: hidden;
+  padding: 6px;
+}
+
+.track-skeleton {
+  height: 54px;
+  margin: 6px;
+}
+
+.track {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  padding: 13px 16px;
+  border-radius: 11px;
+  text-align: left;
+  transition: background var(--fast);
+}
+
+.track:hover {
+  background: var(--surface-2);
+}
+
+.track.is-active {
+  background: var(--accent-soft);
+}
+
+.t-index {
+  width: 26px;
   flex-shrink: 0;
-  overflow-y: auto;
-  height: 100vh;
-  position: sticky;
-  top: 0;
+  font-size: 0.74rem;
+  color: var(--ink-faint);
+  font-variant-numeric: tabular-nums;
+  text-align: center;
 }
 
-.sidenav-title {
-  font-size: 0.8rem;
-  color: #888;
-  padding: 0 0.8rem 0.6rem;
-  border-bottom: 1px solid #333;
-  margin-bottom: 0.6rem;
+.track.is-active .t-index {
+  color: var(--accent);
 }
 
-.sidenav-list {
-  overflow-y: auto;
-  max-height: calc(100vh - 60px);
-}
-
-.sidenav-item {
-  padding: 0.4rem 0.8rem;
-  font-size: 0.8rem;
-  color: #aaa;
-  cursor: pointer;
-  border-radius: 4px;
-  margin: 0.1rem 0.3rem;
-  transition: background 0.2s, color 0.2s;
-  word-break: break-all;
-}
-
-.sidenav-item:hover {
-  background: #333;
-  color: #fff;
-}
-
-.sidenav-item.active {
-  background: #4a90e2;
-  color: #fff;
-}
-
-.content-area {
+.t-main {
   flex: 1;
-  padding: 2rem 0;
   min-width: 0;
   display: flex;
-  flex-direction: column;
-  background-color: rgba(245, 245, 245, 0.85);
-  background-image: url('https://raw.githubusercontent.com/Plana-EpicTankCommander/sth_ineed/main/images/%E6%B0%B4%E7%9D%80%E6%99%AE%E6%8B%89%E5%A8%9C.png');
-  background-blend-mode: overlay;
-  background-repeat: no-repeat;
-  background-position: center right;
-  background-size: 30% auto;
-  background-attachment: fixed;
+  align-items: center;
+  gap: 10px;
 }
 
-.loading, .error, .empty {
-  align-self: center;
-  width: 100%;
-  max-width: 900px;
-  padding: 1rem;
-  border-radius: 8px;
+.t-title {
+  font-size: 0.92rem;
+  color: var(--ink);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.track.is-active .t-title {
+  font-weight: 600;
+  color: var(--accent-ink);
+}
+
+.t-tag {
+  flex-shrink: 0;
+  padding: 1px 7px;
+  border-radius: var(--radius-pill);
+  background: var(--surface-2);
+  color: var(--ink-faint);
+  font-size: 0.66rem;
+  letter-spacing: 0.04em;
+}
+
+.track.is-active .t-tag {
+  background: color-mix(in srgb, var(--accent) 14%, transparent);
+  color: var(--accent);
+}
+
+.t-action {
+  width: 32px;
+  height: 32px;
+  flex-shrink: 0;
+  display: grid;
+  place-items: center;
+  border-radius: 50%;
+  border: 1px solid var(--line);
+  color: var(--ink-soft);
+  transition: background var(--fast), color var(--fast), border-color var(--fast);
+}
+
+.track:hover .t-action {
+  background: var(--accent);
+  border-color: var(--accent);
+  color: #fff;
+}
+
+.track.is-active .t-action {
+  background: var(--accent);
+  border-color: var(--accent);
+  color: #fff;
+}
+
+.t-eq {
+  display: inline-flex;
+  align-items: flex-end;
+  gap: 2px;
+  height: 13px;
+}
+
+.t-eq i {
+  width: 2.5px;
+  border-radius: 2px;
+  background: var(--accent);
+  animation: eq 1.05s var(--ease) infinite;
+}
+
+.t-eq i:nth-child(1) { height: 45%; animation-delay: -0.2s; }
+.t-eq i:nth-child(2) { height: 100%; animation-delay: -0.55s; }
+.t-eq i:nth-child(3) { height: 70%; animation-delay: -0.1s; }
+
+.t-eq.is-paused i {
+  animation-play-state: paused;
+  opacity: 0.5;
+}
+
+@keyframes eq {
+  0%, 100% { transform: scaleY(0.4); }
+  50% { transform: scaleY(1); }
+}
+
+.err-text {
+  flex: 1;
+}
+
+.empty-state {
+  padding: 64px 24px;
   text-align: center;
-  margin: 0 auto;
+  border-radius: var(--radius);
+  border: 1px dashed var(--line-strong);
 }
 
-.loading { background: #f0f0f0; color: #666; }
-.error { background: #ffe0e0; color: #c00; }
-.empty { background: #f9f9f9; color: #999; }
-
-.player-card {
-  background: #f0f7ff;
-  border: 1px solid #4a90e2;
-  border-radius: 10px;
-  padding: 1rem;
-  width: 61.8%;
-  max-width: 100%;
-  margin: 0 auto;
+.es-icon {
+  display: inline-grid;
+  place-items: center;
+  width: 54px;
+  height: 54px;
+  border-radius: 50%;
+  background: var(--accent-soft);
+  color: var(--accent);
+  margin-bottom: 14px;
 }
 
-.player-title {
-  font-size: 0.9rem;
-  color: #333;
-  margin-bottom: 0.5rem;
+.es-title {
+  font-family: var(--font-serif);
+  font-size: 1.05rem;
+  font-weight: 600;
 }
 
-.player-card audio {
-  width: 100%;
-  height: 40px;
+.es-text {
+  margin-top: 6px;
+  font-size: 0.85rem;
+  color: var(--ink-faint);
+}
+
+@media (max-width: 640px) {
+  .volume-hint {
+    margin-left: 0;
+    width: 100%;
+  }
+  .track {
+    gap: 10px;
+    padding: 12px 10px;
+  }
 }
 </style>
