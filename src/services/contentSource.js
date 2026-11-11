@@ -466,4 +466,4 @@ export function groupFiles(files, section) {
     })
 }
 
-export { listFiles, naturalSort, replaceMarkdownImageUrls, REPO_CONFIG }
+export { listFiles, naturalSort, replaceMarkdownImageUrls, REPO_CONFIG, MANIFEST_URL }

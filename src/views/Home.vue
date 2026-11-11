@@ -144,6 +144,7 @@
     </section>
 
     <footer class="home-foot">
+      <p class="foot-note">目录列表读取静态 manifest.json（由 GitHub Action 生成）</p>
       <a :href="SITE.repo" target="_blank" rel="noreferrer" class="section-link">
         <Icon name="github" :size="14" />
         查看源码
@@ -570,7 +571,7 @@ function play(track, index) {
   display: flex;
   flex-wrap: wrap;
   align-items: center;
-  justify-content: flex-end;
+  justify-content: space-between;
   gap: 12px;
   font-size: 0.74rem;
   color: var(--ink-faint);

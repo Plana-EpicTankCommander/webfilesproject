@@ -50,20 +50,27 @@
 
     <section class="section">
       <div class="section-head">
-        <h2 class="section-title">调用限制</h2>
+        <h2 class="section-title">数据链路</h2>
       </div>
       <ul class="limits">
         <li class="limit-row">
-          <span class="limit-k"><Icon name="pulse" :size="15" /> 列表接口</span>
-          <span class="limit-v">未登录 60 次 / 小时，按 IP 计算</span>
+          <span class="limit-k"><Icon name="list" :size="15" /> 目录清单</span>
+          <span class="limit-v">
+            读取仓库根目录的
+            <a :href="manifestUrl" target="_blank" rel="noreferrer">manifest.json</a>（内容变更时由 GitHub Action 生成），不调用 API
+          </span>
         </li>
         <li class="limit-row">
-          <span class="limit-k"><Icon name="file" :size="15" /> 内容直链</span>
-          <span class="limit-v">raw.githubusercontent.com 不受 API 限额影响</span>
+          <span class="limit-k"><Icon name="external" :size="15" /> 内容直链</span>
+          <span class="limit-v">正文 / 图片 / 音频 / PDF 走 raw.githubusercontent.com，不占 API 额度</span>
         </li>
         <li class="limit-row">
-          <span class="limit-k"><Icon name="clock" :size="15" /> 本地缓存</span>
-          <span class="limit-v">目录列表缓存 2 分钟，切换页面不会重复请求</span>
+          <span class="limit-k"><Icon name="refresh" :size="15" /> 兜底</span>
+          <span class="limit-v">清单取不到时才回退 GitHub API（未登录 60 次/小时，按 IP 计算）</span>
+        </li>
+        <li class="limit-row">
+          <span class="limit-k"><Icon name="clock" :size="15" /> 缓存</span>
+          <span class="limit-v">清单与列表各缓存 2 分钟，切换页面不会重复请求</span>
         </li>
       </ul>
     </section>
@@ -131,9 +138,10 @@
 <script setup>
 import { reactive } from 'vue'
 import Icon from '../components/ui/Icon.vue'
-import { REPO_CONFIG } from '../services/contentSource'
+import { REPO_CONFIG, MANIFEST_URL } from '../services/contentSource'
 
 const owner = REPO_CONFIG.novels.owner
+const manifestUrl = MANIFEST_URL
 
 const sources = [
   {
@@ -346,6 +354,19 @@ async function test(key) {
 .limit-v {
   font-size: 0.82rem;
   color: var(--ink-soft);
+  flex: 1;
+  min-width: 0;
+}
+
+.limit-v a {
+  color: var(--accent-ink);
+  text-decoration: underline;
+  text-underline-offset: 2px;
+  text-decoration-color: color-mix(in srgb, var(--accent) 35%, transparent);
+}
+
+.limit-v a:hover {
+  text-decoration-color: var(--accent);
 }
 
 .doc {
