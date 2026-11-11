@@ -144,7 +144,6 @@
     </section>
 
     <footer class="home-foot">
-      <p>数据来自 GitHub · 未经登录的 API 每小时 60 次，列表已做 2 分钟缓存</p>
       <a :href="SITE.repo" target="_blank" rel="noreferrer" class="section-link">
         <Icon name="github" :size="14" />
         查看源码
@@ -571,7 +570,7 @@ function play(track, index) {
   display: flex;
   flex-wrap: wrap;
   align-items: center;
-  justify-content: space-between;
+  justify-content: flex-end;
   gap: 12px;
   font-size: 0.74rem;
   color: var(--ink-faint);

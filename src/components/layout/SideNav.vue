@@ -37,10 +37,7 @@
         <Icon name="github" :size="17" />
         <span>源码仓库</span>
       </a>
-      <p class="foot-note">
-        内容托管于 GitHub<br />
-        <span class="foot-dot" /> 未登录 API 限 60 次/时
-      </p>
+      <p class="foot-note">内容托管于 GitHub</p>
     </div>
   </aside>
 </template>
@@ -204,16 +201,6 @@ function isActive(to) {
   font-size: 0.68rem;
   line-height: 1.6;
   color: var(--ink-faint);
-}
-
-.foot-dot {
-  display: inline-block;
-  width: 5px;
-  height: 5px;
-  margin-right: 4px;
-  border-radius: 50%;
-  background: var(--accent-2);
-  vertical-align: middle;
 }
 
 /* 平板：收成图标栏 */
