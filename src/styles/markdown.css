@@ -208,6 +208,41 @@
   margin-top: 0.9em;
 }
 
+/* 行内图片弹窗：[popup:图片.png;text:点我看图] */
+.prose .popup-link {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  margin: 0 2px;
+  padding: 0 7px;
+  border-radius: 7px;
+  border: 1px dashed color-mix(in srgb, var(--accent) 42%, var(--line));
+  background: var(--accent-soft);
+  color: var(--accent-ink);
+  font-family: var(--font-ui);
+  font-size: 0.86em;
+  line-height: 1.7;
+  vertical-align: baseline;
+  cursor: zoom-in;
+  transition: background var(--fast), border-color var(--fast), transform var(--fast);
+}
+
+.prose .popup-link:hover {
+  border-style: solid;
+  border-color: var(--accent);
+  transform: translateY(-1px);
+}
+
+.prose .popup-link:active {
+  transform: translateY(0);
+}
+
+.prose .popup-link__icon {
+  width: 13px;
+  height: 13px;
+  flex-shrink: 0;
+}
+
 /* 窄屏正文图片放宽 */
 @media (max-width: 700px) {
   .prose img {

@@ -91,6 +91,9 @@
           <pre><code>![](图片文件名.png)
 ![](图片文件名.png?w=50)</code></pre>
           <p>路径末尾的 <code>?w=</code> 控制宽度百分比（1–150），默认 70%。相对路径会自动到 <code>images/</code> 查找，GitHub blob 链接会自动转成 raw 直链。</p>
+          <p>想让读者点一下才看图，用弹窗标记（正文里不直接显示图片）：</p>
+          <pre><code>[popup:图片文件名.png;text:点我看图]</code></pre>
+          <p><code>text</code> 是按钮文字，省略时用文件名；点开后是灯箱，可缩放、平移，并在文章内所有弹窗图片之间左右切换。</p>
         </div>
       </details>
 
@@ -101,7 +104,7 @@
           <Icon name="chevron-down" :size="15" class="doc-caret" />
         </summary>
         <div class="doc-body">
-          <p>在文章里写音乐标记，<code>.mp3</code> 放在 <code>musicpage</code> 仓库根目录：</p>
+          <p>在文章里写音乐标记，<code>.mp3</code> 放在 <code>sth_ineed</code> 仓库的 <code>musics/</code> 目录：</p>
           <pre><code>[music:歌曲名.mp3]
 [music:歌曲名.mp3;title:自定义标题]</code></pre>
           <p>渲染后会得到一个内嵌音轨卡片，点击即交给底部播放器播放，和「声音」页共用同一个播放器。</p>

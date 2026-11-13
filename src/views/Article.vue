@@ -78,6 +78,7 @@
             class="prose"
             :style="{ '--prose-size': fontSize + 'px' }"
             v-html="htmlContent"
+            @click="onProseClick"
           />
 
           <!-- 空 -->
@@ -142,6 +143,9 @@
       :active-id="activeHeadingId"
       @navigate="scrollToHeading"
     />
+
+    <!-- 文章内弹窗图片 -->
+    <Lightbox v-model:index="popupIndex" :items="popupItems" @close="popupIndex = -1" />
   </div>
 </template>
 
@@ -153,6 +157,7 @@ import { marked } from 'marked'
 import Icon from '../components/ui/Icon.vue'
 import ChapterTree from '../components/article/ChapterTree.vue'
 import FloatingToc from '../components/article/FloatingToc.vue'
+import Lightbox from '../components/gallery/Lightbox.vue'
 import ImageCanvas from '../components/ImageCanvas/ImageCanvas.vue'
 import InlineTrack from '../components/player/InlineTrack.vue'
 import {
@@ -161,6 +166,7 @@ import {
   groupFiles,
   replaceMarkdownImageUrls,
   resolveCanvasMarkers,
+  resolvePopupMarkers,
   getPdfRawUrl,
   itemMusicUrl
 } from '../services/contentSource'
@@ -190,6 +196,10 @@ const readingProgress = ref(0)
 
 const fontSize = ref(readFontSize())
 const drawer = ref('')
+
+// 文章内 [popup:...] 图片弹窗
+const popupItems = ref([])
+const popupIndex = ref(-1)
 
 const mountedApps = []
 let pdfObjectUrl = ''
@@ -288,6 +298,7 @@ async function loadContent(item, scroll = true) {
   if (!item) return
   destroyEmbeds()
   revokePdf()
+  popupIndex.value = -1
   selectedPath.value = item.path
   remember(item.path)
   loading.value = true
@@ -311,6 +322,7 @@ async function loadContent(item, scroll = true) {
     let html = await marked.parse(preprocess(text), { breaks: true, gfm: true })
     html = await replaceMarkdownImageUrls(html, item.path)
     html = await resolveCanvasMarkers(html, item.path)
+    html = await resolvePopupMarkers(html, item.path)
     html = await resolveMusicMarkers(html)
     htmlContent.value = html
     loading.value = false
@@ -412,6 +424,21 @@ function parseArticleToc() {
 function scrollToHeading(id) {
   const el = document.getElementById(id)
   if (el) el.scrollIntoView({ behavior: 'smooth', block: 'start' })
+}
+
+// ---------- 文章内图片弹窗 ----------
+
+function onProseClick(event) {
+  const button = event.target.closest('.popup-link')
+  if (!button || !articleRef.value) return
+  event.preventDefault()
+
+  const links = [...articleRef.value.querySelectorAll('.popup-link')]
+  popupItems.value = links.map((el) => ({
+    url: el.dataset.popupSrc,
+    displayName: el.dataset.popupTitle || ''
+  }))
+  popupIndex.value = Math.max(0, links.indexOf(button))
 }
 
 // ---------- 滚动：阅读进度 + 目录高亮 ----------

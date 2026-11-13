@@ -269,6 +269,58 @@ export async function resolveCanvasMarkers(html, markdownPath) {
   return result
 }
 
+// ---------- 弹窗图片标记：[popup:图片.png;text:点我看图;title:说明] ----------
+
+const POPUP_MARKER_RE = /\[popup:([^\]]+)\]/g
+
+const POPUP_ICON = '<svg class="popup-link__icon" viewBox="0 0 24 24" fill="none" stroke="currentColor"'
+  + ' stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">'
+  + '<path d="M2.6 12S6.2 5.8 12 5.8 21.4 12 21.4 12 17.8 18.2 12 18.2 2.6 12 2.6 12Z"/>'
+  + '<path d="M9 12a3 3 0 1 0 6 0 3 3 0 1 0-6 0"/></svg>'
+
+function parsePopupMarker(content) {
+  const parts = content.split(';')
+  const file = parts[0]?.trim()
+  if (!file) return null
+
+  const options = {}
+  for (const part of parts.slice(1)) {
+    const index = part.indexOf(':')
+    if (index <= 0) continue
+    options[part.slice(0, index).trim().toLowerCase()] = part.slice(index + 1).trim()
+  }
+
+  const fallback = file.split('/').pop()
+  const text = options.text || options.title || fallback
+  return { file, text, title: options.title || text }
+}
+
+// 把 [popup:...] 标记替换成行内按钮，点击后由 Article 页面打开灯箱
+export async function resolvePopupMarkers(html, markdownPath) {
+  const matches = [...html.matchAll(POPUP_MARKER_RE)]
+  if (matches.length === 0) return html
+
+  let result = html
+  for (const match of matches) {
+    const marker = parsePopupMarker(match[1])
+    if (!marker) continue
+
+    const url = await resolveImageAssetUrl(markdownPath, marker.file)
+    if (!url) continue
+
+    const button = `<button type="button" class="popup-link"`
+      + ` data-popup-src="${escapeHtmlAttribute(url)}"`
+      + ` data-popup-title="${escapeHtmlAttribute(marker.title)}"`
+      + ` title="点击查看：${escapeHtmlAttribute(marker.title)}">`
+      + POPUP_ICON
+      + `<span>${escapeHtmlAttribute(marker.text)}</span>`
+      + `</button>`
+
+    result = result.replace(match[0], () => button)
+  }
+  return result
+}
+
 // 读取内容清单（同一份清单覆盖 novels / images / musics）
 async function loadManifest() {
   const now = Date.now()
