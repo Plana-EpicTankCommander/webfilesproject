@@ -91,9 +91,20 @@
           <pre><code>![](图片文件名.png)
 ![](图片文件名.png?w=50)</code></pre>
           <p>路径末尾的 <code>?w=</code> 控制宽度百分比（1–150），默认 70%。相对路径会自动到 <code>images/</code> 查找，GitHub blob 链接会自动转成 raw 直链。</p>
-          <p>想让读者点一下才看图，用弹窗标记（正文里不直接显示图片）：</p>
-          <pre><code>[popup:图片文件名.png;text:点我看图]</code></pre>
-          <p><code>text</code> 是按钮文字，省略时用文件名；点开后是灯箱，可缩放、平移，并在文章内所有弹窗图片之间左右切换。</p>
+        </div>
+      </details>
+
+      <details class="doc">
+        <summary>
+          <Icon name="eye" :size="16" />
+          <span class="doc-title">点击文字弹图</span>
+          <Icon name="chevron-down" :size="15" class="doc-caret" />
+        </summary>
+        <div class="doc-body">
+          <p>正文里不直接显示图片，只放一个可点的行内按钮：</p>
+          <pre><code>[popup:图片文件名.png;text:点我看图]
+[popup:图片文件名.png;text:点我看图;title:完整说明]</code></pre>
+          <p><code>text</code> 是按钮文字（省略时用文件名），<code>title</code> 是灯箱标题（省略时同 text）。点开后是灯箱，可缩放、平移，并在本文所有弹窗图片之间左右切换。</p>
         </div>
       </details>
 
@@ -132,6 +143,32 @@
               <tr><td><code>title</code></td><td>图片替代文字</td><td>文件名</td></tr>
             </tbody>
           </table>
+        </div>
+      </details>
+
+      <details class="doc">
+        <summary>
+          <Icon name="file" :size="16" />
+          <span class="doc-title">插入 PDF</span>
+          <Icon name="chevron-down" :size="15" class="doc-caret" />
+        </summary>
+        <div class="doc-body">
+          <p>把 <code>.pdf</code> 放进 <code>novels/</code> 的任意子目录即可，章节列表会自动识别并打上 <code>PDF</code> 标签：</p>
+          <pre><code>novels/上海协定初设/上海协定初设PDF.pdf</code></pre>
+          <p>点击后直接在页面内阅读（浏览器内置阅读器），工具条里还有「下载」。加载时会把文件取回内存并生成临时 Blob，切走时自动释放，不依赖第三方阅读器。</p>
+        </div>
+      </details>
+
+      <details class="doc">
+        <summary>
+          <Icon name="play" :size="16" />
+          <span class="doc-title">内嵌视频 / 网页</span>
+          <Icon name="chevron-down" :size="15" class="doc-caret" />
+        </summary>
+        <div class="doc-body">
+          <p>把 B 站 / YouTube 的 <code>&lt;iframe&gt;</code> 代码原样贴进 Markdown 即可：</p>
+          <pre><code>&lt;iframe src="//player.bilibili.com/player.html?bvid=..." allowfullscreen="true"&gt;&lt;/iframe&gt;</code></pre>
+          <p>站点会把 iframe 统一成 16:9、圆角、宽度自适应，不会超出正文栏，<code>width</code> / <code>height</code> 属性可以不管。</p>
         </div>
       </details>
     </section>

@@ -24,7 +24,18 @@
 
 ## 文章内插入语法
 
-### 🖼️ 插入图片
+快速索引：
+
+| 写法 | 效果 |
+|------|------|
+| `![](图片.png)` / `![](图片.png?w=50)` | 正文里直接显示图片 |
+| `[popup:图片.png;text:点我看图]` | 行内按钮，点击弹出灯箱 |
+| `[music:歌名.mp3;title:标题]` | 内嵌音轨卡片，交给底部播放器 |
+| `[canvas:图片.png;h:520;fit:cover]` | 可缩放 / 平移的画布 |
+| 把 `.pdf` 放进 `novels/` 子目录 | 章节列表出现 PDF，点开直接阅读 |
+| 直接贴 `<iframe src="…">` | 内嵌视频 / 网页 |
+
+### 🖼️ 插入图片（直接显示）
 
 在 `.md` 中使用 Markdown 图片语法，图片放在仓库的 `images/` 目录：
 
@@ -37,14 +48,19 @@
 - GitHub blob 链接会自动转成 `raw.githubusercontent.com` 直链
 - `?w=` 控制宽度百分比（1~150），默认 70%
 
-**点击文字才看图**（正文里不直接显示图片）：
+### 👁️ 点击文字弹图（popup）
+
+正文里不直接显示图片，只放一个可点的行内按钮：
 
 ```
 [popup:图片文件名.png;text:点我看图]
 [popup:图片文件名.png;text:点我看图;title:完整说明]
 ```
 
-`text` 是按钮文字（省略时用文件名），点击后打开灯箱：可缩放、平移，并在本文所有弹窗图片之间左右切换。
+- `text`：按钮文字，省略时用文件名
+- `title`：灯箱里显示的标题，省略时同 `text`
+- 点击打开灯箱：可缩放、拖动、双击复位，并在本文所有 popup 图片之间 ←/→ 切换
+- 图片查找规则和普通图片一致（相对路径走 `images/`，也支持 blob 链接和外部 URL）
 
 ### 🎵 插入音乐
 
@@ -75,9 +91,20 @@
 
 ### 📄 插入 PDF
 
-把 `.pdf` 丢进 `novels/` 的任意子目录即可，章节列表会自动识别并打上 `PDF` 标签，点击后直接在页面里阅读。
+把 `.pdf` 丢进 `novels/` 的任意子目录即可，章节列表会自动识别并打上 `PDF` 标签，点击后直接在页面里阅读，工具条里也有「下载」。
 
-实现上不依赖 `mozilla.github.io/pdf.js` 这类第三方阅读器：GitHub raw 对 PDF 返回的是 `application/octet-stream`，直接放进 `<iframe>` 只会触发下载，所以前端会先 `fetch` 回二进制、包成 `application/pdf` 的 Blob，再交给浏览器内置阅读器渲染；切换章节时会释放 Blob URL。取不到文件时，错误提示里会给出「下载 PDF」兜底。
+实现上不依赖第三方阅读器：GitHub raw 对 PDF 返回的是 `application/octet-stream`，直接放进 `<iframe>` 只会触发下载，所以前端会先 `fetch` 回二进制、包成 `application/pdf` 的 Blob，再交给浏览器内置阅读器渲染；切换章节时会释放 Blob URL。
+
+### 📺 内嵌视频 / 网页
+
+把 B 站、YouTube 等平台的 `<iframe>` 代码原样贴进 Markdown 即可：
+
+```html
+<iframe src="//player.bilibili.com/player.html?bvid=..." scrolling="no" border="0" frameborder="no" allowfullscreen="true" width="800" height="450"></iframe>
+```
+
+站点会把所有 iframe 统一成 16:9、圆角、宽度自适应（不会超出正文栏），`width` / `height` 属性可以不管。
+
 
 ## 站点图标与头像
 
@@ -91,7 +118,7 @@
 
 - Vue 3 + Vite + Vue Router（hash 模式）+ Pinia
 - Pinia 只做一件事：全局播放器状态（`src/stores/player.js`）
-- GitHub API：获取文件列表（未登录 60 次/小时，已加 2 分钟缓存）
+- 目录列表：优先读取内容仓库里的静态 `manifest.json`（GitHub Action 生成），取不到才回退 GitHub API（未登录 60 次/小时）
 - `raw.githubusercontent.com`：获取正文 / 图片 / 音频 / PDF，绕过 API 限额
 - 无 UI 框架、无图标库、无 CSS 预处理器；入口 chunk + 按页懒加载
 
@@ -102,7 +129,7 @@
 ├── public/                  图标、头像、原图（构建时原样拷贝）
 ├── src/
 │   ├── components/
-│   │   ├── article/         ChapterTree.vue  ArticleToc.vue
+│   │   ├── article/         ChapterTree.vue  FloatingToc.vue
 │   │   ├── gallery/         Lightbox.vue
 │   │   ├── layout/          SideNav.vue  MobileTabBar.vue
 │   │   ├── player/          PlayerBar.vue  InlineTrack.vue
