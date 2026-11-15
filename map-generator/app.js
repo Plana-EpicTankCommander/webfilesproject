@@ -29,6 +29,7 @@ const state = {
   activeCode: '',
   batchMode: false,
   batchSelected: new Set(),
+  shadeVariation: false,
   toastTimer: 0
 }
 
@@ -46,6 +47,7 @@ const batchModeButton = $('#batch-mode')
 const batchActions = $('#batch-actions')
 const batchCount = $('#batch-count')
 const batchColorInput = $('#batch-color')
+const shadeVariationInput = $('#shade-variation')
 const countryList = $('#country-list')
 const countrySearch = $('#country-search')
 const summary = $('#summary')
@@ -91,6 +93,20 @@ function shadeColor(hex, hash) {
   const g = adjust((num >> 8) & 255)
   const b = adjust(num & 255)
   return `#${[r, g, b].map((channel) => channel.toString(16).padStart(2, '0')).join('')}`
+}
+
+function divisionColor(country, id) {
+  return state.shadeVariation ? shadeColor(country.color, hashString(id)) : country.color
+}
+
+function applyProvinceColors() {
+  refreshFullDivisionLists()
+  for (const country of state.data.countries) {
+    for (const id of country.divisions) {
+      const division = findDivision(id)
+      if (division) division.color = divisionColor(country, id)
+    }
+  }
 }
 
 function sanitizeFilename(value) {
@@ -536,7 +552,7 @@ function assignDivision(id) {
   division.id = newId
   country.divisions.push(newId)
   division.country = country.code
-  division.color = shadeColor(country.color, hashString(newId))
+  division.color = divisionColor(country, newId)
 
   rebuildMap()
   showToast(`已将 ${division.nameZh} 划入 ${country.nameZh}。`)
@@ -557,7 +573,7 @@ function updateActiveColor() {
   activeSwatch.style.background = country.color
   for (const id of country.divisions) {
     const division = findDivision(id)
-    if (division) division.color = shadeColor(country.color, hashString(id))
+    if (division) division.color = divisionColor(country, id)
   }
   rebuildMap()
 }
@@ -606,7 +622,7 @@ function batchApplyColor() {
     country.color = color
     for (const id of country.divisions) {
       const division = findDivision(id)
-      if (division) division.color = shadeColor(color, hashString(id))
+      if (division) division.color = divisionColor(country, id)
     }
   }
   rebuildMap()
@@ -704,7 +720,8 @@ function applyData(data, base) {
   countryList.classList.remove('is-batch')
   batchActions.hidden = true
   batchModeButton.textContent = '批量操作'
-  refreshFullDivisionLists()
+  shadeVariationInput.checked = state.shadeVariation
+  applyProvinceColors()
   buildRenderData()
   updateBatchBar()
 
@@ -834,6 +851,13 @@ function bindEvents() {
   activeVisibleInput.addEventListener('change', () => {
     if (!state.activeCode) return
     setCountryVisibility(state.activeCode, activeVisibleInput.checked)
+  })
+
+  shadeVariationInput.addEventListener('change', () => {
+    state.shadeVariation = shadeVariationInput.checked
+    applyProvinceColors()
+    rebuildMap()
+    showToast(state.shadeVariation ? '已开启省份色差。' : '已关闭省份色差，同一国家使用纯色。')
   })
 
   $('#map-title').addEventListener('input', () => {

@@ -117,6 +117,8 @@ code { padding: 1px 5px; border-radius: 2px; background: rgba(201, 168, 106, 0.1
 .visibility-row input:checked + .switch-track::after { transform: translateX(15px); background: var(--gold-bright); }
 .visibility-row input:focus-visible + .switch-track { outline: 1px solid var(--gold); outline-offset: 2px; }
 .visibility-row input:not(:checked) ~ span:last-child { color: rgba(224, 139, 124, 0.8); }
+.shade-row { margin: 0 0 2px; gap: 7px; }
+.shade-row em { margin-left: auto; color: var(--faint); font-size: 9px; font-style: normal; letter-spacing: 0; }
 
 .country-tools { display: flex; flex-direction: column; gap: 7px; margin-bottom: 8px; }
 .batch-tools { display: flex; flex-direction: column; gap: 6px; }
