@@ -25,7 +25,7 @@ const DEFAULTS = {
   showTitle: true,
   showCompass: true,
   showGraticule: false,
-  showLegend: true,
+  showLegend: false,
   showDivisionBorders: false,
   showProvinceShading: false,
   detailCountries: null,

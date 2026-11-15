@@ -540,7 +540,7 @@ const T = {
   showTitle: !0,
   showCompass: !0,
   showGraticule: !1,
-  showLegend: !0,
+  showLegend: !1,
   showDivisionBorders: !1,
   showProvinceShading: !1,
   detailCountries: null,
