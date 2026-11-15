@@ -10,6 +10,7 @@
 - **📄 PDF** — 在页面内直接阅读，不依赖第三方阅读器；支持下载
 - **🖼️ 图片** — 网格画廊，点击进入灯箱：缩放平移、左右键切换、缩略图条、新窗口看原图
 - **🎨 画布** — 文章里可以把图片放进固定画布，滚轮缩放、拖动平移、双击复位，始终不会拖出画布
+- **🗺️ 地图** — 可缩放 / 拖动的 HOI4 风格世界政治地图；按 250 个国家、4,594 个一级行政区着色，只描国界与海岸线，基础数据全部装在单个 JSON 里
 - **🎵 音乐** — 全局底部播放器，列表循环 / 单曲 / 随机、音量记忆；文章内嵌音轨与「声音」页共用同一个队列
 - **📊 状态** — 数据源连通性测试、API 限额说明与文章标记语法速查
 
@@ -32,6 +33,7 @@
 | `[popup:图片.png;text:点我看图]` | 行内按钮，点击弹出灯箱 |
 | `[music:歌名.mp3;title:标题]` | 内嵌音轨卡片，交给底部播放器 |
 | `[canvas:图片.png;h:520;fit:cover]` | 可缩放 / 平移的画布 |
+| `[map:world;h:560;focus:CHN]` | 可缩放 / 平移的 HOI4 风格世界地图 |
 | 把 `.pdf` 放进 `novels/` 子目录 | 章节列表出现 PDF，点开直接阅读 |
 | 直接贴 `<iframe src="…">` | 内嵌视频 / 网页 |
 
@@ -89,6 +91,50 @@
 
 交互：滚轮以鼠标位置为中心缩放、拖动平移、双击放大/复位，键盘聚焦后支持 `+` / `-` / `0` 与方向键。
 
+### 🗺️ 插入可交互地图
+
+在文稿里单独占一行写：
+
+```
+[map:world]
+[map:world;h:560;w:100;focus:CHN;zoom:2.6;fit:contain;title:世界政治地图]
+```
+
+| 参数 | 含义 | 默认 |
+|------|------|------|
+| `world` | 地图数据 id；当前内置数据集只有 `world` | `world` |
+| `h` | 地图高度（px，240~1200） | `540` |
+| `w` | 地图宽度百分比（20~100） | `100` |
+| `focus` | 初始聚焦：三位国家代码（如 `CHN`）或行政区编号（如 `CHN011`） | 无 |
+| `zoom` | 初始缩放倍数；配合 `focus` 可只给某个国家 | `0`（全图） |
+| `fit` | `contain` 完整显示 / `cover` 铺满画布 | `contain` |
+| `title` | 标题牌文字；写 `none` 可隐藏 | 数据里的标题 |
+
+交互：滚轮以指针位置为中心缩放，单指 / 鼠标拖动平移，双指捏合，双击放大或复位；悬停显示一级行政区名称，点击国家打开信息卡。键盘聚焦后支持 `+` / `-` / `0` / 方向键 / `Esc`。
+
+地图外观是低饱和政治色 + 暗色海面 + 细金线 + 纸纹；行政区的颜色会形成轻微色块，但**渲染时不描一级行政区边界**，只描海岸线与国界。缩放时线宽保持屏幕像素级，不会跟着地图一起变粗。
+
+**在其他网页里使用**：执行 `npm run build` 后，把以下两个文件放到任意静态站点即可：
+
+```
+dist/map-plugin/hoi4-map.js
+dist/map/world-map.json
+```
+
+```html
+<script type="module" src="./map-plugin/hoi4-map.js"></script>
+
+<hoi4-map
+  src="./map/world-map.json"
+  height="560"
+  title="世界政治地图"
+  focus="CHN"
+  zoom="2.6"
+></hoi4-map>
+```
+
+可用属性：`src`、`height`、`width`、`title`、`subtitle`、`focus`、`zoom`、`fit`、`show-title`、`show-compass`。地图内部是 Shadow DOM，不会和页面样式打架。完整示例见仓库根目录的 `map-demo.html`（构建后访问 `/map-demo.html`）。
+
 ### 📄 插入 PDF
 
 把 `.pdf` 丢进 `novels/` 的任意子目录即可，章节列表会自动识别并打上 `PDF` 标签，点击后直接在页面里阅读，工具条里也有「下载」。
@@ -120,6 +166,7 @@
 - Pinia 只做一件事：全局播放器状态（`src/stores/player.js`）
 - 目录列表：优先读取内容仓库里的静态 `manifest.json`（GitHub Action 生成），取不到才回退 GitHub API（未登录 60 次/小时）
 - `raw.githubusercontent.com`：获取正文 / 图片 / 音频 / PDF，绕过 API 限额
+- 地图：原生 Canvas 2D + Path2D + Shadow DOM，不依赖地图库；单文件量化拓扑 JSON，快慢双速渲染（拖动时变换快照，停下后重绘矢量细节）
 - 无 UI 框架、无图标库、无 CSS 预处理器；入口 chunk + 按页懒加载
 
 ## 目录结构
@@ -127,14 +174,17 @@
 ```
 .
 ├── public/                  图标、头像、原图（构建时原样拷贝）
+│   └── map/world-map.json   地图基础数据（单文件，随页面发布）
 ├── src/
 │   ├── components/
 │   │   ├── article/         ChapterTree.vue  FloatingToc.vue
 │   │   ├── gallery/         Lightbox.vue
 │   │   ├── layout/          SideNav.vue  MobileTabBar.vue
+│   │   ├── map/             MapCanvas.vue（文章内挂载用 Vue 包装）
 │   │   ├── player/          PlayerBar.vue  InlineTrack.vue
 │   │   ├── ui/              Icon.vue
 │   │   └── ImageCanvas/     ImageCanvas.vue
+│   ├── map/                 hoi4-map.js（引擎）  hoi4-map-element.js（Web Component）  map-styles.js
 │   ├── composables/         useTheme.js
 │   ├── services/            contentSource.js（GitHub 取数与标记解析）
 │   ├── stores/              player.js
@@ -142,8 +192,40 @@
 │   ├── views/               Home / Article / Image / Sound / Status / Dev
 │   ├── router/              index.js
 │   └── site.js              站点名、导航、仓库地址等常量
+├── scripts/build-map-data.mjs  从 Natural Earth 生成 world-map.json
+├── map-demo.html            地图插件独立演示页（含网页 / 文章两种插入方式）
 ├── .github/workflows/       deploy-aweb.yml（把 dist 同步到 aweb）
 └── dist/                    构建产物（提交到仓库，供部署）
+```
+
+## 地图数据格式
+
+`public/map/world-map.json` 是地图的唯一基础素材。顶层字段：
+
+| 字段 | 含义 |
+|------|------|
+| `meta` | 标题、投影、量化后的世界宽高、国家数、行政区数、来源与许可 |
+| `countries[]` | 国家：三位字母数字代码 `code`、英文名 `name`、中文名 `nameZh`、国家色 `color`、标签锚点 `label`、包围盒 `bbox`、面积 `area`、国界弧段 `arcs`、下辖行政区编号 `divisions` |
+| `divisions[]` | 一级行政区：`id`（国家代码 + 三位序号，如 `CHN001`）、`country`、`name` / `nameZh`、该行政区颜色 `color`、`polygons` |
+| `arcs[]` | 共享边界弧段，量化后按 `[x, y, dx, dy, …]` 增量编码 |
+| `coast[]` / `borders[]` | 需要描边的海岸线 / 国界弧段索引；行政区内部弧段不在其中 |
+| `graticule[]` | 10° 经纬网，格式同 `arcs` |
+
+`polygons` 的结构是「多边形 → 环 → 有符号弧段引用」：
+
+```json
+"polygons": [[[12, -34, 35], [40, 41]]]
+```
+
+- 正数表示正向使用 `arcs[i]`，负数表示反向使用（`~i`，与 TopoJSON 一致）
+- 相邻行政区共用弧段，因此简化不会把地块撕开；渲染时只描 `coast` / `borders`，不描行政区内部弧段
+- 颜色是预制在 JSON 里的十六进制值；改颜色不需要动代码，重新加载即可
+
+数据由 `scripts/build-map-data.mjs` 生成：
+
+```bash
+# 首次需要下载 Natural Earth 1:10m 数据到 .map-cache/（见脚本顶部 URL）
+npm run build:map-data   # 重新生成 public/map/world-map.json
 ```
 
 ## 开发与部署
@@ -151,13 +233,13 @@
 ```bash
 npm install     # 安装依赖
 npm run dev     # 开发服务器，默认 http://localhost:5173
-npm run build   # 构建到 dist/
+npm run build   # 构建站点 + 生成 dist/map-plugin/hoi4-map.js
 npm run preview # 本地预览构建产物
 ```
 
 部署链路：推送到 `main` 后，`.github/workflows/deploy-aweb.yml` 会把 `dist/` 同步到 `Plana-EpicTankCommander/aweb` 仓库，由 GitHub Pages 对外提供。
 
-> 因为部署直接取 `dist/`，**改完源码一定要 `npm run build` 并把 `dist/` 一起提交**，否则线上还是旧版本。
+> 因为部署直接取 `dist/`，**改完源码一定要 `npm run build` 并把 `dist/` 一起提交**，否则线上还是旧版本。地图数据 `dist/map/world-map.json`（约 2.9 MB）与独立插件 `dist/map-plugin/hoi4-map.js` 也由构建生成，需一并提交。
 
 ## 数据来源
 
@@ -166,6 +248,7 @@ npm run preview # 本地预览构建产物
 | 文章 / PDF | `Plana-EpicTankCommander/sth_ineed` | `novels/` |
 | 图片 | `Plana-EpicTankCommander/sth_ineed` | `images/` |
 | 音乐 | `Plana-EpicTankCommander/sth_ineed` | `musics/` |
+| 地图底图 | Natural Earth 1:10m Admin-1 States, Provinces（公有领域） | `scripts/build-map-data.mjs` 生成 `public/map/world-map.json` |
 
 > 内容清单：`sth_ineed` 仓库里的 GitHub Action 会在 `novels/`、`images/`、`musics/` 变更时生成根目录的 `manifest.json`。前端优先读取这份静态清单（不消耗 API 额度），读不到时自动回退到 GitHub API。
 
@@ -174,5 +257,5 @@ npm run preview # 本地预览构建产物
 - GitHub API 未认证上限 60 次/小时，按 IP 计算；已加 2 分钟列表缓存。触发限流时页面会显示提示和「重试」按钮
 - 图片、音乐、PDF 都走 `raw.githubusercontent.com`，不消耗 API 额度
 - 播放器默认音量 10%，音量与循环模式记在 localStorage
-- 文章内的图片/音乐/画布标记只在 `novels/` 下的 Markdown 中生效，路径大小写敏感
+- 文章内的图片/音乐/画布/地图标记只在 `novels/` 下的 Markdown 中生效，路径大小写敏感
 - 图标文件名被浏览器缓存得比较死，换图标后线上可能需要强刷（Ctrl+F5）才更新

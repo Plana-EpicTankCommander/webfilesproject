@@ -269,6 +269,63 @@ export async function resolveCanvasMarkers(html, markdownPath) {
   return result
 }
 
+// ---------- 地图标记：[map:world;h:560;w:100;focus:CHN;zoom:2.6;title:说明] ----------
+
+const MAP_MARKER_RE = /\[map:([^\]]+)\]/g
+
+function parseMapMarker(content) {
+  const parts = content.split(';')
+  const mapId = parts[0]?.trim() || 'world'
+
+  const options = {}
+  for (const part of parts.slice(1)) {
+    const index = part.indexOf(':')
+    if (index <= 0) continue
+    options[part.slice(0, index).trim().toLowerCase()] = part.slice(index + 1).trim()
+  }
+
+  const parsedHeight = parseInt(options.h, 10)
+  const parsedWidth = parseInt(options.w, 10)
+  const parsedZoom = parseFloat(options.zoom)
+
+  return {
+    mapId,
+    height: Number.isFinite(parsedHeight) ? Math.min(1200, Math.max(240, parsedHeight)) : 540,
+    width: Number.isFinite(parsedWidth) ? Math.min(100, Math.max(20, parsedWidth)) : 100,
+    title: options.title || '',
+    focus: (options.focus || '').toUpperCase(),
+    zoom: Number.isFinite(parsedZoom) ? Math.min(32, Math.max(1, parsedZoom)) : 0,
+    fit: options.fit === 'cover' ? 'cover' : 'contain'
+  }
+}
+
+// 把 [map:...] 标记替换成占位 div，交给 Article 页面挂载 MapCanvas 组件
+export async function resolveMapMarkers(html) {
+  const matches = [...html.matchAll(MAP_MARKER_RE)]
+  if (matches.length === 0) return html
+
+  // 地图 JSON 随站点一起发布；使用 BASE_URL 以兼容 GitHub Pages 的子路径。
+  const mapSrc = `${import.meta.env.BASE_URL}map/world-map.json`
+  let result = html
+  for (const match of matches) {
+    const marker = parseMapMarker(match[1])
+    const host = `<div class="map-embed-host"`
+      + ` style="width:${marker.width}%;margin:1.7rem auto;"`
+      + ` data-map-id="${escapeHtmlAttribute(marker.mapId)}"`
+      + ` data-map-src="${escapeHtmlAttribute(mapSrc)}"`
+      + ` data-map-height="${marker.height}px"`
+      + ` data-map-title="${escapeHtmlAttribute(marker.title)}"`
+      + ` data-map-focus="${escapeHtmlAttribute(marker.focus)}"`
+      + ` data-map-zoom="${marker.zoom}"`
+      + ` data-map-fit="${marker.fit}"`
+      + `></div>`
+    result = result.replace(match[0], () => host)
+  }
+  // 独立成行的标记会被 marked 包进 <p>；把占位块取出，避免 block 元素嵌在段落里。
+  result = result.replace(/<p>\s*(<div class="map-embed-host"[\s\S]*?<\/div>)\s*<\/p>/g, '$1')
+  return result
+}
+
 // ---------- 弹窗图片标记：[popup:图片.png;text:点我看图;title:说明] ----------
 
 const POPUP_MARKER_RE = /\[popup:([^\]]+)\]/g
