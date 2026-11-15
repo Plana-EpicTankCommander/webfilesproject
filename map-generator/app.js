@@ -27,6 +27,8 @@ const state = {
   geom: null,
   map: null,
   activeCode: '',
+  batchMode: false,
+  batchSelected: new Set(),
   toastTimer: 0
 }
 
@@ -40,6 +42,10 @@ const activeNameZhInput = $('#active-name-zh')
 const activeNameEnInput = $('#active-name-en')
 const activeColorInput = $('#active-color')
 const activeVisibleInput = $('#active-visible')
+const batchModeButton = $('#batch-mode')
+const batchActions = $('#batch-actions')
+const batchCount = $('#batch-count')
+const batchColorInput = $('#batch-color')
 const countryList = $('#country-list')
 const countrySearch = $('#country-search')
 const summary = $('#summary')
@@ -406,6 +412,13 @@ function renderCountryList() {
     row.classList.toggle('is-active', country.code === state.activeCode)
     row.classList.toggle('is-hidden-country', Boolean(country.hidden))
 
+    const check = document.createElement('input')
+    check.type = 'checkbox'
+    check.className = 'row-check'
+    check.dataset.code = country.code
+    check.checked = state.batchSelected.has(country.code)
+    check.setAttribute('aria-label', `选择 ${country.nameZh}`)
+
     const main = document.createElement('button')
     main.type = 'button'
     main.className = 'row-main'
@@ -440,7 +453,7 @@ function renderCountryList() {
     eye.setAttribute('aria-label', country.hidden ? `显示 ${country.nameZh}` : `隐藏 ${country.nameZh}`)
     eye.innerHTML = country.hidden ? EYE_OFF_SVG : EYE_SVG
 
-    row.append(main, eye)
+    row.append(check, main, eye)
     fragment.append(row)
   }
 
@@ -557,6 +570,65 @@ function setCountryVisibility(code, visible) {
   showToast(visible ? `${country.nameZh} 已显示在地图上。` : `${country.nameZh} 已从地图上隐藏。`)
 }
 
+function updateBatchBar() {
+  batchCount.textContent = String(state.batchSelected.size)
+  for (const button of batchActions.querySelectorAll('[data-batch]')) {
+    button.disabled = state.batchSelected.size === 0
+  }
+}
+
+function setBatchMode(enabled) {
+  state.batchMode = enabled
+  if (!enabled) state.batchSelected.clear()
+  countryList.classList.toggle('is-batch', enabled)
+  batchActions.hidden = !enabled
+  batchModeButton.textContent = enabled ? '退出批量' : '批量操作'
+  renderCountryList()
+  updateBatchBar()
+}
+
+function batchSetVisibility(show) {
+  if (!state.batchSelected.size) return
+  for (const code of state.batchSelected) {
+    const country = findCountry(code)
+    if (country) country.hidden = !show
+  }
+  rebuildMap()
+  showToast(`已${show ? '显示' : '隐藏'} ${state.batchSelected.size} 个国家。`)
+}
+
+function batchApplyColor() {
+  if (!state.batchSelected.size) return
+  const color = batchColorInput.value
+  for (const code of state.batchSelected) {
+    const country = findCountry(code)
+    if (!country) continue
+    country.color = color
+    for (const id of country.divisions) {
+      const division = findDivision(id)
+      if (division) division.color = shadeColor(color, hashString(id))
+    }
+  }
+  rebuildMap()
+  showToast(`已更新 ${state.batchSelected.size} 个国家的颜色。`)
+}
+
+function batchSelectAll() {
+  const query = countrySearch.value.trim().toLowerCase()
+  for (const country of state.data.countries) {
+    const searchText = `${country.code} ${country.name} ${country.nameZh}`.toLowerCase()
+    if (!query || searchText.includes(query)) state.batchSelected.add(country.code)
+  }
+  renderCountryList()
+  updateBatchBar()
+}
+
+function batchClearSelection() {
+  state.batchSelected.clear()
+  renderCountryList()
+  updateBatchBar()
+}
+
 function addCountry(event) {
   event.preventDefault()
   const code = $('#new-code').value.trim().toUpperCase()
@@ -627,8 +699,14 @@ function applyData(data, base) {
 
   state.data = data
   state.geom = buildGeometry(data)
+  state.batchMode = false
+  state.batchSelected.clear()
+  countryList.classList.remove('is-batch')
+  batchActions.hidden = true
+  batchModeButton.textContent = '批量操作'
   refreshFullDivisionLists()
   buildRenderData()
+  updateBatchBar()
 
   const available = new Set(data.countries.map((country) => country.code))
   state.activeCode = available.has('CHN')
@@ -724,6 +802,26 @@ function bindEvents() {
     renderCountryList()
   })
 
+  countryList.addEventListener('change', (event) => {
+    const check = event.target.closest('.row-check')
+    if (!check) return
+    if (check.checked) state.batchSelected.add(check.dataset.code)
+    else state.batchSelected.delete(check.dataset.code)
+    updateBatchBar()
+  })
+
+  batchModeButton.addEventListener('click', () => setBatchMode(!state.batchMode))
+  batchActions.addEventListener('click', (event) => {
+    const button = event.target.closest('[data-batch]')
+    if (!button || button.disabled) return
+    const action = button.dataset.batch
+    if (action === 'show') batchSetVisibility(true)
+    else if (action === 'hide') batchSetVisibility(false)
+    else if (action === 'color') batchApplyColor()
+  })
+  $('#batch-all').addEventListener('click', batchSelectAll)
+  $('#batch-clear').addEventListener('click', batchClearSelection)
+
   countrySearch.addEventListener('input', renderCountryList)
   $('#country-form').addEventListener('submit', addCountry)
   $('#new-code').addEventListener('input', (event) => {
@@ -754,4 +852,5 @@ function bindEvents() {
 }
 
 bindEvents()
+updateBatchBar()
 loadBase('world')

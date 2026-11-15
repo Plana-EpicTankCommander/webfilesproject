@@ -91,6 +91,21 @@
             </div>
             <div class="country-tools">
               <input id="country-search" class="search" type="search" placeholder="搜索国家代码 / 名称…" autocomplete="off" />
+              <div class="batch-tools">
+                <button type="button" id="batch-mode" class="btn btn-ghost">批量操作</button>
+                <div id="batch-actions" class="batch-actions" hidden>
+                  <span id="batch-count" class="batch-count">0</span>
+                  <button type="button" class="btn btn-small" data-batch="show">显示</button>
+                  <button type="button" class="btn btn-small" data-batch="hide">隐藏</button>
+                  <label class="batch-color" title="批量设置国家颜色">
+                    <input id="batch-color" type="color" value="#9a7b4f" />
+                    <span>颜色</span>
+                  </label>
+                  <button type="button" class="btn btn-small" data-batch="color">应用</button>
+                  <button type="button" id="batch-all" class="btn btn-small">全选</button>
+                  <button type="button" id="batch-clear" class="btn btn-small">清除</button>
+                </div>
+              </div>
               <form id="country-form" class="add-country" autocomplete="off">
                 <input id="new-code" class="code-input" type="text" maxlength="3" placeholder="代码" required />
                 <input id="new-name-zh" type="text" placeholder="中文名" required />

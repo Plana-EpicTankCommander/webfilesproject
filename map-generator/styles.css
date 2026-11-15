@@ -119,6 +119,12 @@ code { padding: 1px 5px; border-radius: 2px; background: rgba(201, 168, 106, 0.1
 .visibility-row input:not(:checked) ~ span:last-child { color: rgba(224, 139, 124, 0.8); }
 
 .country-tools { display: flex; flex-direction: column; gap: 7px; margin-bottom: 8px; }
+.batch-tools { display: flex; flex-direction: column; gap: 6px; }
+.batch-tools > .btn { align-self: flex-start; }
+.batch-actions { display: flex; align-items: center; flex-wrap: wrap; gap: 5px; padding: 6px; border: 1px solid var(--line); border-radius: 3px; background: rgba(201, 168, 106, 0.045); }
+.batch-count { min-width: 20px; color: var(--gold); font-family: var(--mono); font-size: 10px; text-align: center; }
+.batch-color { display: inline-flex; align-items: center; gap: 4px; color: var(--faint); font-size: 9px; cursor: pointer; }
+.batch-color input { width: 25px; height: 25px; padding: 2px; border: 1px solid var(--line); border-radius: 2px; background: transparent; cursor: pointer; }
 .search {
   width: 100%; height: 31px; padding: 0 8px;
   border: 1px solid var(--line); border-radius: 3px;
@@ -137,10 +143,13 @@ code { padding: 1px 5px; border-radius: 2px; background: rgba(201, 168, 106, 0.1
 
 .country-list { max-height: 292px; overflow: auto; border: 1px solid rgba(255, 255, 255, 0.04); border-radius: 3px; background: rgba(4, 8, 10, 0.26); scrollbar-width: thin; scrollbar-color: rgba(201, 168, 106, 0.25) transparent; }
 .country-row {
-  display: grid; grid-template-columns: minmax(0, 1fr) 30px;
+  display: grid; grid-template-columns: 0 minmax(0, 1fr) 30px;
   align-items: stretch; min-height: 31px; border-bottom: 1px solid rgba(255, 255, 255, 0.035);
   background: transparent;
 }
+.country-list.is-batch .country-row { grid-template-columns: 17px minmax(0, 1fr) 30px; }
+.row-check { width: 13px; height: 13px; margin: 0; align-self: center; justify-self: center; accent-color: var(--gold); opacity: 0; pointer-events: none; }
+.country-list.is-batch .row-check { opacity: 1; pointer-events: auto; }
 .country-row:last-child { border-bottom: 0; }
 .country-row:hover { background: rgba(201, 168, 106, 0.06); }
 .country-row.is-active { background: rgba(201, 168, 106, 0.12); }
