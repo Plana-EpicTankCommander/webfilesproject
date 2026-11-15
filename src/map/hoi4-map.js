@@ -28,6 +28,7 @@ const DEFAULTS = {
   showLegend: true,
   showDivisionBorders: false,
   showProvinceShading: false,
+  detailCountries: null,
   onDivisionClick: null,
   data: null,
   interactive: true
@@ -520,13 +521,31 @@ export class Hoi4Map {
     this.borderPath = this.pathFromArcList(data.borders || [])
     this.graticulePath = this.pathFromGraticule(data.graticule || [])
     this.divisionBorderPath = null
+    this.detailBorderPath = null
+    this.detailCountryCodes = []
+    const national = new Set([...(data.coast || []), ...(data.borders || [])])
+    const detail = new Set(this.options.detailCountries || data.meta.detailCountries || [])
+    this.detailCountryCodes = [...detail]
     if (this.options.showDivisionBorders) {
-      const national = new Set([...(data.coast || []), ...(data.borders || [])])
       const internal = []
       for (let i = 0; i < data.arcs.length; i++) {
         if (!national.has(i)) internal.push(i)
       }
       this.divisionBorderPath = this.pathFromArcList(internal)
+    } else if (detail.size) {
+      const detailArcs = new Set()
+      for (const division of data.divisions) {
+        if (!detail.has(division.country)) continue
+        for (const polygon of division.polygons || []) {
+          for (const refs of polygon) {
+            for (const ref of refs) {
+              const index = ref < 0 ? ~ref : ref
+              if (!national.has(index)) detailArcs.add(index)
+            }
+          }
+        }
+      }
+      if (detailArcs.size) this.detailBorderPath = this.pathFromArcList([...detailArcs])
     }
     this.countryPaths = new Map()
     for (const country of data.countries) {
@@ -1079,6 +1098,11 @@ export class Hoi4Map {
       ctx.fill(path)
     }
 
+    if (this.detailBorderPath && scale > this.fitScale * 1.55) {
+      ctx.lineWidth = 0.55 / scale
+      ctx.strokeStyle = 'rgba(18, 15, 11, 0.42)'
+      ctx.stroke(this.detailBorderPath)
+    }
     if (this.divisionBorderPath) {
       ctx.lineWidth = 0.7 / scale
       ctx.strokeStyle = 'rgba(18, 15, 11, 0.52)'
@@ -1099,6 +1123,14 @@ export class Hoi4Map {
       ctx.lineWidth = 0.55 / scale
       ctx.strokeStyle = 'rgba(238, 215, 168, 0.10)'
       ctx.stroke(this.borderPath)
+    }
+    if (this.detailCountryCodes.length) {
+      ctx.lineWidth = 1.8 / scale
+      ctx.strokeStyle = 'rgba(7, 7, 5, 0.96)'
+      for (const code of this.detailCountryCodes) {
+        const path = this.countryPaths.get(code)
+        if (path) ctx.stroke(path)
+      }
     }
     ctx.restore()
   }

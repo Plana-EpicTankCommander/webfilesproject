@@ -21,9 +21,13 @@ import { geoNaturalEarth1, geoPath, geoGraticule10 } from 'd3-geo'
 const __dirname = path.dirname(fileURLToPath(import.meta.url))
 const ROOT = path.resolve(__dirname, '..')
 const CACHE = path.join(ROOT, '.map-cache')
-const SOURCE = path.join(CACHE, 'ne_10m_admin_1_states_provinces.geojson')
+const SOURCE = process.env.MAP_ADMIN1
+  ? path.resolve(process.env.MAP_ADMIN1)
+  : path.join(CACHE, 'ne_10m_admin_1_states_provinces.geojson')
 const COUNTRIES = path.join(CACHE, 'ne_10m_admin_0_countries.geojson')
-const SIMPLIFIED = path.join(CACHE, 'admin1.simplified.topojson')
+const SIMPLIFIED = process.env.MAP_SIMPLIFIED
+  ? path.resolve(process.env.MAP_SIMPLIFIED)
+  : path.join(CACHE, 'admin1.simplified.topojson')
 const OUT = path.resolve(process.env.MAP_OUT || path.join(CACHE, 'world-map.json'))
 
 const SIMPLIFY = process.env.MAP_SIMPLIFY || '40%'
@@ -189,6 +193,10 @@ function ensureSource() {
 }
 
 function simplify() {
+  if (process.env.MAP_SKIP_SIMPLIFY === '1') {
+    log('使用外部 TopoJSON，跳过 mapshaper 简化')
+    return
+  }
   if (fs.existsSync(SIMPLIFIED) && !process.env.MAP_FORCE) {
     log('复用已简化的 TopoJSON（设置 MAP_FORCE=1 可重新生成）')
     return
@@ -683,9 +691,10 @@ function build() {
     meta: {
       title: '世界政治地图',
       titleEn: 'WORLD POLITICAL MAP',
-      source: 'Natural Earth 1:10m Admin-1 States, Provinces',
+      source: 'Natural Earth 1:10m Admin-1 + DataV China city boundaries',
       sourceUrl: 'https://www.naturalearthdata.com/',
-      license: 'Public Domain',
+      license: 'Natural Earth public domain; China city boundaries from DataV',
+      detailCountries: ['CHN'],
       projection: 'Natural Earth',
       graticuleStep: 10,
       width: WORLD_WIDTH,

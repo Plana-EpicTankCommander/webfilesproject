@@ -1,5 +1,5 @@
 /*! hoi4-map · HOI4-style interactive atlas · Natural Earth 1:10m */
-const A = `
+const D = `
 :host {
   display: block;
   position: relative;
@@ -527,7 +527,7 @@ const A = `
   .hm-hint, .hm-tooltip, .hm-loading, .hm-card, .hm-spinner { transition: none !important; animation: none !important; }
 }
 `, H = "https://raw.githubusercontent.com/Plana-EpicTankCommander/sth_ineed/main/maps/world-map.json";
-const z = {
+const T = {
   src: H,
   height: "520px",
   width: "100%",
@@ -543,22 +543,23 @@ const z = {
   showLegend: !0,
   showDivisionBorders: !1,
   showProvinceShading: !1,
+  detailCountries: null,
   onDivisionClick: null,
   data: null,
   interactive: !0
-}, S = /* @__PURE__ */ new Map();
+}, C = /* @__PURE__ */ new Map();
 function E(h = {}) {
-  return { ...z, ...h };
+  return { ...T, ...h };
 }
-function P(h) {
+function L(h) {
   if (typeof h == "number" && Number.isFinite(h)) return `${Math.max(220, h)}px`;
   if (typeof h == "string" && h.trim()) {
     const t = h.trim();
     return /^\d+(\.\d+)?$/.test(t) ? `${Math.max(220, Number(t))}px` : t;
   }
-  return z.height;
+  return T.height;
 }
-function L(h) {
+function W(h) {
   if (typeof h == "number" && Number.isFinite(h)) return h;
   if (typeof h == "string") {
     const t = h.trim().match(/^(\d+(?:\.\d+)?)(px)?$/);
@@ -572,7 +573,7 @@ function O(h) {
     const t = h.trim();
     return /^\d+(\.\d+)?$/.test(t) ? `${Math.min(100, Math.max(20, Number(t)))}%` : t;
   }
-  return z.width;
+  return T.width;
 }
 function p(h, t, e) {
   return Math.min(e, Math.max(t, h));
@@ -581,7 +582,7 @@ function F(h, t, e) {
   const i = p((e - h) / (t - h), 0, 1);
   return i * i * (3 - 2 * i);
 }
-function W(h) {
+function R(h) {
   let t = 0, e = 0;
   const i = [];
   for (let s = 0; s + 1 < h.length; s += 2)
@@ -589,8 +590,8 @@ function W(h) {
   return i;
 }
 async function q(h, t) {
-  if (S.has(h)) {
-    const i = S.get(h);
+  if (C.has(h)) {
+    const i = C.get(h);
     return i instanceof Promise, i;
   }
   const e = (async () => {
@@ -616,18 +617,18 @@ async function q(h, t) {
     const d = new TextDecoder("utf-8").decode(n);
     return JSON.parse(d);
   })();
-  S.set(h, e);
+  C.set(h, e);
   try {
     const i = await e;
-    return S.set(h, i), i;
+    return C.set(h, i), i;
   } catch (i) {
-    throw S.delete(h), i;
+    throw C.delete(h), i;
   }
 }
 class N {
   constructor(t, e = {}) {
     if (!t) throw new Error("Hoi4Map 需要一个容器元素");
-    this.host = t, this.options = E(e), this.src = this.options.src || H, this.explicitHeightPx = L(this.options.height), this.destroyed = !1, this.ready = !1, this.data = null, this.pendingReveal = !1, this.viewW = 1, this.viewH = 1, this.dpr = 1, this.fitScale = 1, this.scale = 1, this.tx = 0, this.ty = 0, this.snapMargin = 0, this.pointers = /* @__PURE__ */ new Map(), this.drag = null, this.pinch = null, this.dragging = !1, this.hoverDivision = null, this.hoverCountry = null, this.selectedCountry = null, this.fastRaf = 0, this.qualityRaf = 0, this.settleTimer = 0, this.hintTimer = 0, this.arcs = [], this.fillGroups = /* @__PURE__ */ new Map(), this.countryPathCache = /* @__PURE__ */ new Map(), this.grid = null, this.labelCountries = [], this.bound = {
+    this.host = t, this.options = E(e), this.src = this.options.src || H, this.explicitHeightPx = W(this.options.height), this.destroyed = !1, this.ready = !1, this.data = null, this.pendingReveal = !1, this.viewW = 1, this.viewH = 1, this.dpr = 1, this.fitScale = 1, this.scale = 1, this.tx = 0, this.ty = 0, this.snapMargin = 0, this.pointers = /* @__PURE__ */ new Map(), this.drag = null, this.pinch = null, this.dragging = !1, this.hoverDivision = null, this.hoverCountry = null, this.selectedCountry = null, this.fastRaf = 0, this.qualityRaf = 0, this.settleTimer = 0, this.hintTimer = 0, this.arcs = [], this.fillGroups = /* @__PURE__ */ new Map(), this.countryPathCache = /* @__PURE__ */ new Map(), this.grid = null, this.labelCountries = [], this.bound = {
       pointerDown: (i) => this.onPointerDown(i),
       pointerMove: (i) => this.onPointerMove(i),
       pointerUp: (i) => this.onPointerUp(i),
@@ -655,7 +656,7 @@ class N {
   // ---------------------------------------------------------------------------
   setupDom() {
     this.host.style.display = this.host.style.display || "block", this.host.style.width = O(this.options.width), this.root = this.host.shadowRoot || this.host.attachShadow({ mode: "open" }), this.root.innerHTML = `
-      <style>${A}</style>
+      <style>${D}</style>
       <div class="hm-frame" data-busy="true">
         <canvas class="hm-canvas" tabindex="0" role="application" aria-label="可缩放的世界政治地图"></canvas>
         <div class="hm-grain"></div>
@@ -729,7 +730,7 @@ class N {
 
         <div class="hm-live" aria-live="polite"></div>
       </div>
-    `, this.frame = this.root.querySelector(".hm-frame"), this.canvas = this.root.querySelector(".hm-canvas"), this.ctx = this.canvas.getContext("2d"), this.plate = this.root.querySelector(".hm-plate"), this.plateKicker = this.root.querySelector(".hm-plate-kicker"), this.titleEl = this.root.querySelector(".hm-title"), this.subtitleEl = this.root.querySelector(".hm-subtitle"), this.zoomLabel = this.root.querySelector(".hm-zoom"), this.toolbar = this.root.querySelector(".hm-toolbar"), this.hintEl = this.root.querySelector(".hm-hint"), this.legend = this.root.querySelector(".hm-legend"), this.legendCountries = this.root.querySelector(".hm-legend-countries"), this.legendDivisions = this.root.querySelector(".hm-legend-divisions"), this.tooltip = this.root.querySelector(".hm-tooltip"), this.tooltipCountry = this.root.querySelector(".hm-tt-country"), this.tooltipName = this.root.querySelector(".hm-tt-name"), this.tooltipSub = this.root.querySelector(".hm-tt-sub"), this.card = this.root.querySelector(".hm-card"), this.cardSwatch = this.root.querySelector(".hm-swatch"), this.cardName = this.root.querySelector(".hm-card-name"), this.cardEn = this.root.querySelector(".hm-card-en"), this.cardCode = this.root.querySelector(".hm-card-code"), this.cardCount = this.root.querySelector(".hm-card-count"), this.loading = this.root.querySelector(".hm-loading"), this.progressBar = this.root.querySelector(".hm-progress i"), this.loadingPercent = this.root.querySelector(".hm-loading small"), this.errorBox = this.root.querySelector(".hm-error"), this.errorText = this.root.querySelector(".hm-error-text"), this.live = this.root.querySelector(".hm-live"), this.frame.style.setProperty("--hm-height", P(this.options.height)), this.plateKicker.textContent = this.options.kicker || z.kicker, this.titleEl.textContent = this.options.title || "世界政治地图", this.subtitleEl.textContent = this.options.subtitle || "WORLD POLITICAL MAP", this.plate.hidden = !this.options.showTitle || this.options.title === "none", this.root.querySelector(".hm-compass").hidden = !this.options.showCompass, this.legend.hidden = !this.options.showLegend, document.fullscreenEnabled || (this.root.querySelector(".hm-full").hidden = !0), this.options.interactive || (this.toolbar.hidden = !0, this.hintEl.hidden = !0), this.hintTimer = window.setTimeout(() => this.dismissHint(), 6e3);
+    `, this.frame = this.root.querySelector(".hm-frame"), this.canvas = this.root.querySelector(".hm-canvas"), this.ctx = this.canvas.getContext("2d"), this.plate = this.root.querySelector(".hm-plate"), this.plateKicker = this.root.querySelector(".hm-plate-kicker"), this.titleEl = this.root.querySelector(".hm-title"), this.subtitleEl = this.root.querySelector(".hm-subtitle"), this.zoomLabel = this.root.querySelector(".hm-zoom"), this.toolbar = this.root.querySelector(".hm-toolbar"), this.hintEl = this.root.querySelector(".hm-hint"), this.legend = this.root.querySelector(".hm-legend"), this.legendCountries = this.root.querySelector(".hm-legend-countries"), this.legendDivisions = this.root.querySelector(".hm-legend-divisions"), this.tooltip = this.root.querySelector(".hm-tooltip"), this.tooltipCountry = this.root.querySelector(".hm-tt-country"), this.tooltipName = this.root.querySelector(".hm-tt-name"), this.tooltipSub = this.root.querySelector(".hm-tt-sub"), this.card = this.root.querySelector(".hm-card"), this.cardSwatch = this.root.querySelector(".hm-swatch"), this.cardName = this.root.querySelector(".hm-card-name"), this.cardEn = this.root.querySelector(".hm-card-en"), this.cardCode = this.root.querySelector(".hm-card-code"), this.cardCount = this.root.querySelector(".hm-card-count"), this.loading = this.root.querySelector(".hm-loading"), this.progressBar = this.root.querySelector(".hm-progress i"), this.loadingPercent = this.root.querySelector(".hm-loading small"), this.errorBox = this.root.querySelector(".hm-error"), this.errorText = this.root.querySelector(".hm-error-text"), this.live = this.root.querySelector(".hm-live"), this.frame.style.setProperty("--hm-height", L(this.options.height)), this.plateKicker.textContent = this.options.kicker || T.kicker, this.titleEl.textContent = this.options.title || "世界政治地图", this.subtitleEl.textContent = this.options.subtitle || "WORLD POLITICAL MAP", this.plate.hidden = !this.options.showTitle || this.options.title === "none", this.root.querySelector(".hm-compass").hidden = !this.options.showCompass, this.legend.hidden = !this.options.showLegend, document.fullscreenEnabled || (this.root.querySelector(".hm-full").hidden = !0), this.options.interactive || (this.toolbar.hidden = !0, this.hintEl.hidden = !0), this.hintTimer = window.setTimeout(() => this.dismissHint(), 6e3);
   }
   bindEvents() {
     const t = this.canvas;
@@ -775,7 +776,7 @@ class N {
   prepare(t) {
     if (!t || !Array.isArray(t.arcs) || !Array.isArray(t.divisions))
       throw new Error("地图 JSON 格式不正确");
-    this.data = t, this.arcs = t.arcs.map(W), this.fillGroups.clear(), this.countryPathCache.clear(), this.hoverDivision = null, this.hoverCountry = null, this.selectedCountry = null, this.countryByCode = new Map(t.countries.map((s) => [s.code, s]));
+    this.data = t, this.arcs = t.arcs.map(R), this.fillGroups.clear(), this.countryPathCache.clear(), this.hoverDivision = null, this.hoverCountry = null, this.selectedCountry = null, this.countryByCode = new Map(t.countries.map((r) => [r.code, r]));
     const e = /* @__PURE__ */ new Map(), i = {
       cols: 56,
       rows: 1,
@@ -783,30 +784,43 @@ class N {
       cells: []
     };
     i.rows = Math.ceil(t.meta.height / i.cell), i.cells = Array.from({ length: i.cols * i.rows }, () => []);
-    for (const s of t.divisions) {
-      const o = this.ringsForDivision(s);
-      if (!o.length) continue;
-      const r = this.pathFromRings(o), a = this.boundsOfRings(o);
-      s._rings = o, s._path = r, s._bbox = a;
-      const n = this.options.showProvinceShading ? s.color : this.countryByCode.get(s.country)?.color || s.color;
-      let l = this.fillGroups.get(n);
-      l || (l = new Path2D(), this.fillGroups.set(n, l)), l.addPath(r);
-      const d = p(Math.floor((a[0] - t.meta.width * 0) / i.cell), 0, i.cols - 1), c = p(Math.floor(a[2] / i.cell), 0, i.cols - 1), m = p(Math.floor(a[1] / i.cell), 0, i.rows - 1), g = p(Math.floor(a[3] / i.cell), 0, i.rows - 1);
-      for (let y = m; y <= g; y++)
-        for (let x = d; x <= c; x++)
-          i.cells[y * i.cols + x].push(s);
-      e.set(s.id, s);
+    for (const r of t.divisions) {
+      const a = this.ringsForDivision(r);
+      if (!a.length) continue;
+      const n = this.pathFromRings(a), l = this.boundsOfRings(a);
+      r._rings = a, r._path = n, r._bbox = l;
+      const d = this.options.showProvinceShading ? r.color : this.countryByCode.get(r.country)?.color || r.color;
+      let c = this.fillGroups.get(d);
+      c || (c = new Path2D(), this.fillGroups.set(d, c)), c.addPath(n);
+      const m = p(Math.floor((l[0] - t.meta.width * 0) / i.cell), 0, i.cols - 1), g = p(Math.floor(l[2] / i.cell), 0, i.cols - 1), S = p(Math.floor(l[1] / i.cell), 0, i.rows - 1), M = p(Math.floor(l[3] / i.cell), 0, i.rows - 1);
+      for (let b = S; b <= M; b++)
+        for (let v = m; v <= g; v++)
+          i.cells[b * i.cols + v].push(r);
+      e.set(r.id, r);
     }
-    if (this.grid = i, this.byDivision = e, this.labelCountries = [...t.countries].sort((s, o) => o.area - s.area), this.coastPath = this.pathFromArcList(t.coast || []), this.borderPath = this.pathFromArcList(t.borders || []), this.graticulePath = this.pathFromGraticule(t.graticule || []), this.divisionBorderPath = null, this.options.showDivisionBorders) {
-      const s = /* @__PURE__ */ new Set([...t.coast || [], ...t.borders || []]), o = [];
-      for (let r = 0; r < t.arcs.length; r++)
-        s.has(r) || o.push(r);
-      this.divisionBorderPath = this.pathFromArcList(o);
+    this.grid = i, this.byDivision = e, this.labelCountries = [...t.countries].sort((r, a) => a.area - r.area), this.coastPath = this.pathFromArcList(t.coast || []), this.borderPath = this.pathFromArcList(t.borders || []), this.graticulePath = this.pathFromGraticule(t.graticule || []), this.divisionBorderPath = null, this.detailBorderPath = null, this.detailCountryCodes = [];
+    const s = /* @__PURE__ */ new Set([...t.coast || [], ...t.borders || []]), o = new Set(this.options.detailCountries || t.meta.detailCountries || []);
+    if (this.detailCountryCodes = [...o], this.options.showDivisionBorders) {
+      const r = [];
+      for (let a = 0; a < t.arcs.length; a++)
+        s.has(a) || r.push(a);
+      this.divisionBorderPath = this.pathFromArcList(r);
+    } else if (o.size) {
+      const r = /* @__PURE__ */ new Set();
+      for (const a of t.divisions)
+        if (o.has(a.country))
+          for (const n of a.polygons || [])
+            for (const l of n)
+              for (const d of l) {
+                const c = d < 0 ? ~d : d;
+                s.has(c) || r.add(c);
+              }
+      r.size && (this.detailBorderPath = this.pathFromArcList([...r]));
     }
     this.countryPaths = /* @__PURE__ */ new Map();
-    for (const s of t.countries) {
-      const o = this.pathFromArcList(s.arcs || []);
-      this.countryPaths.set(s.code, o);
+    for (const r of t.countries) {
+      const a = this.pathFromArcList(r.arcs || []);
+      this.countryPaths.set(r.code, a);
     }
   }
   ringsForDivision(t) {
@@ -857,7 +871,7 @@ class N {
   pathFromGraticule(t) {
     const e = new Path2D();
     for (const i of t) {
-      const s = W(i);
+      const s = R(i);
       if (!(s.length < 2)) {
         e.moveTo(s[0][0], s[0][1]);
         for (let o = 1; o < s.length; o++) e.lineTo(s[o][0], s[o][1]);
@@ -900,7 +914,7 @@ class N {
       this.renderEmpty();
   }
   setHeight(t) {
-    this.options.height = t, this.explicitHeightPx = L(t), this.frame.style.setProperty("--hm-height", P(t)), this.resize();
+    this.options.height = t, this.explicitHeightPx = W(t), this.frame.style.setProperty("--hm-height", L(t)), this.resize();
   }
   computeFitScale() {
     if (!this.data) return 1;
@@ -1102,7 +1116,14 @@ class N {
     }
     for (const [r, a] of this.fillGroups)
       t.fillStyle = r, t.fill(a);
-    this.divisionBorderPath && (t.lineWidth = 0.7 / s, t.strokeStyle = "rgba(18, 15, 11, 0.52)", t.stroke(this.divisionBorderPath)), this.coastPath && (t.lineWidth = 1.25 / s, t.strokeStyle = "rgba(7, 7, 5, 0.95)", t.stroke(this.coastPath)), this.borderPath && (t.lineWidth = 1.55 / s, t.strokeStyle = "rgba(22, 16, 10, 0.93)", t.stroke(this.borderPath), t.lineWidth = 0.55 / s, t.strokeStyle = "rgba(238, 215, 168, 0.10)", t.stroke(this.borderPath)), t.restore();
+    if (this.detailBorderPath && s > this.fitScale * 1.55 && (t.lineWidth = 0.55 / s, t.strokeStyle = "rgba(18, 15, 11, 0.42)", t.stroke(this.detailBorderPath)), this.divisionBorderPath && (t.lineWidth = 0.7 / s, t.strokeStyle = "rgba(18, 15, 11, 0.52)", t.stroke(this.divisionBorderPath)), this.coastPath && (t.lineWidth = 1.25 / s, t.strokeStyle = "rgba(7, 7, 5, 0.95)", t.stroke(this.coastPath)), this.borderPath && (t.lineWidth = 1.55 / s, t.strokeStyle = "rgba(22, 16, 10, 0.93)", t.stroke(this.borderPath), t.lineWidth = 0.55 / s, t.strokeStyle = "rgba(238, 215, 168, 0.10)", t.stroke(this.borderPath)), this.detailCountryCodes.length) {
+      t.lineWidth = 1.8 / s, t.strokeStyle = "rgba(7, 7, 5, 0.96)";
+      for (const r of this.detailCountryCodes) {
+        const a = this.countryPaths.get(r);
+        a && t.stroke(a);
+      }
+    }
+    t.restore();
   }
   drawOverlays(t) {
     if (!this.ready) return;
@@ -1144,23 +1165,23 @@ class N {
     t.setTransform(this.dpr, 0, 0, this.dpr, 0, 0), t.textAlign = "center", t.textBaseline = "middle", t.lineJoin = "round";
     for (const d of this.labelCountries) {
       if (a >= o) break;
-      const c = d.bbox, m = c[0] * this.scale + this.tx, g = c[1] * this.scale + this.ty, y = c[2] * this.scale + this.tx, x = c[3] * this.scale + this.ty;
-      if (y < -30 || m > this.viewW + 30 || x < -20 || g > this.viewH + 20) continue;
-      const C = y - m, R = x - g;
-      if (C < 26 || R < 11) continue;
-      const w = d.label[0] * this.scale + this.tx, v = d.label[1] * this.scale + this.ty;
-      if (w < 16 || w > this.viewW - 16 || v < 16 || v > this.viewH - 16) continue;
-      const M = Math.min(15, 11 + e * 0.55), D = `600 ${M}px "Noto Serif SC", "Songti SC", "STSong", "SimSun", Georgia, serif`;
-      t.font = D;
-      const k = d.nameZh || d.name, T = t.measureText(k).width;
-      if (T > Math.max(C * 1.45, 48) && e < 4.5 || e < 5 && k.length > 6 && C < 160) continue;
-      const u = {
-        x: w - T / 2 - 4,
-        y: v - M * 0.75 - 3,
-        w: T + 8,
-        h: M * 1.5 + 6
+      const c = d.bbox, m = c[0] * this.scale + this.tx, g = c[1] * this.scale + this.ty, S = c[2] * this.scale + this.tx, M = c[3] * this.scale + this.ty;
+      if (S < -30 || m > this.viewW + 30 || M < -20 || g > this.viewH + 20) continue;
+      const b = S - m, v = M - g;
+      if (b < 26 || v < 11) continue;
+      const x = d.label[0] * this.scale + this.tx, w = d.label[1] * this.scale + this.ty;
+      if (x < 16 || x > this.viewW - 16 || w < 16 || w > this.viewH - 16) continue;
+      const k = Math.min(15, 11 + e * 0.55), A = `600 ${k}px "Noto Serif SC", "Songti SC", "STSong", "SimSun", Georgia, serif`;
+      t.font = A;
+      const z = d.nameZh || d.name, P = t.measureText(z).width;
+      if (P > Math.max(b * 1.45, 48) && e < 4.5 || e < 5 && z.length > 6 && b < 160) continue;
+      const f = {
+        x: x - P / 2 - 4,
+        y: w - k * 0.75 - 3,
+        w: P + 8,
+        h: k * 1.5 + 6
       };
-      u.x < 2 || u.x + u.w > this.viewW - 2 || u.y < 2 || u.y + u.h > this.viewH - 2 || l.some((f) => u.x < f.x + f.w && u.x + u.w > f.x && u.y < f.y + f.h && u.y + u.h > f.y) || r.some((f) => u.x < f.x + f.w && u.x + u.w > f.x && u.y < f.y + f.h && u.y + u.h > f.y) || (r.push(u), t.save(), t.globalAlpha = i * (e > 2.4 ? 0.92 : 0.74), "letterSpacing" in t && (t.letterSpacing = "1.4px"), t.strokeStyle = "rgba(3, 7, 9, 0.82)", t.lineWidth = 3.4, t.strokeText(k, w, v), t.fillStyle = "#f2e8d3", t.fillText(k, w, v), e > 2.9 && C > 84 && d.name && (t.globalAlpha = i * 0.45, t.font = '8px Georgia, "Times New Roman", serif', "letterSpacing" in t && (t.letterSpacing = "2.2px"), t.fillStyle = "#e4d6b9", t.fillText(d.name.toUpperCase(), w, v + M * 0.98)), t.restore(), a++);
+      f.x < 2 || f.x + f.w > this.viewW - 2 || f.y < 2 || f.y + f.h > this.viewH - 2 || l.some((u) => f.x < u.x + u.w && f.x + f.w > u.x && f.y < u.y + u.h && f.y + f.h > u.y) || r.some((u) => f.x < u.x + u.w && f.x + f.w > u.x && f.y < u.y + u.h && f.y + f.h > u.y) || (r.push(f), t.save(), t.globalAlpha = i * (e > 2.4 ? 0.92 : 0.74), "letterSpacing" in t && (t.letterSpacing = "1.4px"), t.strokeStyle = "rgba(3, 7, 9, 0.82)", t.lineWidth = 3.4, t.strokeText(z, x, w), t.fillStyle = "#f2e8d3", t.fillText(z, x, w), e > 2.9 && b > 84 && d.name && (t.globalAlpha = i * 0.45, t.font = '8px Georgia, "Times New Roman", serif', "letterSpacing" in t && (t.letterSpacing = "2.2px"), t.fillStyle = "#e4d6b9", t.fillText(d.name.toUpperCase(), x, w + k * 0.98)), t.restore(), a++);
     }
   }
   // ---------------------------------------------------------------------------
@@ -1395,7 +1416,7 @@ class N {
     }), this.host.__hoi4Map === this && delete this.host.__hoi4Map, this.data && (this.data = null);
   }
 }
-function b(h, t = !0) {
+function y(h, t = !0) {
   return h == null ? t : h !== "false" && h !== "0";
 }
 class _ extends HTMLElement {
@@ -1418,10 +1439,10 @@ class _ extends HTMLElement {
       focus: (this.getAttribute("focus") || "").toUpperCase(),
       zoom: Number.isFinite(e) ? e : 0,
       fit: this.getAttribute("fit") === "cover" ? "cover" : "contain",
-      showTitle: b(this.getAttribute("show-title")),
-      showCompass: b(this.getAttribute("show-compass")),
-      showGraticule: b(this.getAttribute("show-graticule"), !1),
-      showProvinceShading: b(this.getAttribute("show-province-shading"), !1)
+      showTitle: y(this.getAttribute("show-title")),
+      showCompass: y(this.getAttribute("show-compass")),
+      showGraticule: y(this.getAttribute("show-graticule"), !1),
+      showProvinceShading: y(this.getAttribute("show-province-shading"), !1)
     });
   }
   disconnectedCallback() {
@@ -1463,20 +1484,20 @@ class _ extends HTMLElement {
       return;
     }
     if (t === "show-title") {
-      s.options.showTitle = b(i), s.plate.hidden = !s.options.showTitle || s.options.title === "none";
+      s.options.showTitle = y(i), s.plate.hidden = !s.options.showTitle || s.options.title === "none";
       return;
     }
     if (t === "show-compass") {
-      s.options.showCompass = b(i);
+      s.options.showCompass = y(i);
       const o = s.root.querySelector(".hm-compass");
       o && (o.hidden = !s.options.showCompass);
       return;
     }
     if (t === "show-graticule") {
-      s.options.showGraticule = b(i, !1), s.invalidateQuality();
+      s.options.showGraticule = y(i, !1), s.invalidateQuality();
       return;
     }
-    t === "show-province-shading" && (s.options.showProvinceShading = b(i, !1), s.setData(s.data));
+    t === "show-province-shading" && (s.options.showProvinceShading = y(i, !1), s.setData(s.data));
   }
 }
 function G(h = "hoi4-map") {
