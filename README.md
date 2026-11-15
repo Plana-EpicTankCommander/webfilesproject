@@ -136,6 +136,17 @@
 
 可用属性：`src`、`height`、`width`、`title`、`subtitle`、`focus`、`zoom`、`fit`、`show-title`、`show-compass`、`show-graticule`；不写 `src` 时默认读取 `sth_ineed/maps/world-map.json`。地图内部是 Shadow DOM，不会和页面样式打架。完整示例见仓库根目录的 `map-demo.html`（构建后访问 `/map-demo.html`）。
 
+### 🧰 地图 JSON 生成器
+
+`map-generator/` 是一个本地网页工具，用来从世界地图裁剪区域数据：
+
+```bash
+npm run dev
+# http://localhost:5173/map-generator/
+```
+
+选择国家、设置标题 / 边距 / 文件名后，可即时预览、下载或复制生成的 JSON；输出结构可直接放到 `sth_ineed/maps/<id>-map.json`，文章写 `[map:<id>]` 即可使用。详细说明见 `map-generator/README.md`。
+
 ### 📄 插入 PDF
 
 把 `.pdf` 丢进 `novels/` 的任意子目录即可，章节列表会自动识别并打上 `PDF` 标签，点击后直接在页面里阅读，工具条里也有「下载」。
