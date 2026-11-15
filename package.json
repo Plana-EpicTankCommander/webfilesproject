@@ -7,6 +7,7 @@
     "dev": "vite",
     "build": "vite build && npm run build:map-plugin",
     "build:map-data": "node scripts/build-map-data.mjs",
+    "build:map-region": "node scripts/build-region-map.mjs east-asia",
     "build:map-plugin": "vite build --config vite.map.config.js",
     "preview": "vite preview"
   },

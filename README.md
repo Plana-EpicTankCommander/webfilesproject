@@ -102,7 +102,7 @@
 
 | 参数 | 含义 | 默认 |
 |------|------|------|
-| `world` | 地图数据 id；对应 `sth_ineed/maps/world-map.json` | `world` |
+| `world` / `east-asia` | 地图数据 id；对应 `sth_ineed/maps/<id>-map.json` | `world` |
 | `h` | 地图高度（px，240~1200） | `540` |
 | `w` | 地图宽度百分比（20~100） | `100` |
 | `focus` | 初始聚焦：三位国家代码（如 `CHN`）或行政区编号（如 `CHN011`） | 无 |
@@ -115,7 +115,10 @@
 
 地图外观是低饱和政治色 + 暗色海面 + 细金线 + 纸纹；行政区的颜色会形成轻微色块，但**渲染时不描一级行政区边界**，只描海岸线与国界。缩放时线宽保持屏幕像素级，不会跟着地图一起变粗。
 
-地图数据不在本站的构建产物里，而是和文章一起放在内容仓库 `sth_ineed/maps/world-map.json`，由前端通过 `raw.githubusercontent.com` 读取。
+地图数据不在本站的构建产物里，而是和文章一起放在内容仓库 `sth_ineed/maps/`，由前端通过 `raw.githubusercontent.com` 读取。当前提供：
+
+- `world-map.json`：全球地图
+- `east-asia-map.json`：东亚区域（中国、香港、澳门、日本、韩国、朝鲜、蒙古、台湾），文章写 `[map:east-asia]` 即可
 
 **在其他网页里使用**：执行 `npm run build` 后，把 `dist/map-plugin/hoi4-map.js` 放到静态站点即可；地图 JSON 直接使用内容仓库的 raw 地址（也可以下载后自建副本）：
 
@@ -189,17 +192,18 @@
 │   ├── views/               Home / Article / Image / Sound / Status / Dev
 │   ├── router/              index.js
 │   └── site.js              站点名、导航、仓库地址等常量
-├── scripts/build-map-data.mjs  从 Natural Earth 生成 world-map.json
+├── scripts/build-map-data.mjs    从 Natural Earth 生成 world-map.json
+├── scripts/build-region-map.mjs  从世界数据裁剪区域地图
 ├── map-demo.html            地图插件独立演示页（含网页 / 文章两种插入方式）
 ├── .github/workflows/       deploy-aweb.yml（把 dist 同步到 aweb）
 └── dist/                    构建产物（提交到仓库，供部署）
 ```
 
-> 地图基础数据不在本仓库的 `public/` 下，而是和文章一起放在内容仓库 `sth_ineed/maps/world-map.json`。
+> 地图基础数据不在本仓库的 `public/` 下，而是和文章一起放在内容仓库 `sth_ineed/maps/`。
 
 ## 地图数据格式
 
-`sth_ineed/maps/world-map.json` 是地图的唯一基础素材。它是**混合缩进**的可读 JSON：`meta`、`countries`、`divisions` 逐字段换行，`arcs` / `graticule` 每 12 个数字换一行，而不是压缩成一行。顶层字段：
+`sth_ineed/maps/world-map.json` 是全球地图数据，`east-asia-map.json` 是东亚区域子集。两者结构完全相同，都是**混合缩进**的可读 JSON：`meta`、`countries`、`divisions` 逐字段换行，`arcs` / `graticule` 每 12 个数字换一行，而不是压缩成一行。顶层字段：
 
 | 字段 | 含义 |
 |------|------|
@@ -220,14 +224,16 @@
 - 相邻行政区共用弧段，因此简化不会把地块撕开；渲染时只描 `coast` / `borders`，不描行政区内部弧段
 - 颜色是预制在 JSON 里的十六进制值；改颜色不需要动代码，重新加载即可
 
-数据由 `scripts/build-map-data.mjs` 生成：
+数据由 `scripts/build-map-data.mjs` 生成，区域地图再由 `scripts/build-region-map.mjs` 裁剪：
 
 ```bash
 # 首次需要下载 Natural Earth 1:10m 数据到 .map-cache/（见脚本顶部 URL）
-npm run build:map-data   # 生成 .map-cache/world-map.json
+npm run build:map-data    # 生成 .map-cache/world-map.json
+npm run build:map-region  # 生成 .map-cache/east-asia-map.json
 
 # 然后复制到内容仓库并提交：
 #   sth_ineed/maps/world-map.json
+#   sth_ineed/maps/east-asia-map.json
 ```
 
 ## 开发与部署
@@ -250,7 +256,7 @@ npm run preview # 本地预览构建产物
 | 文章 / PDF | `Plana-EpicTankCommander/sth_ineed` | `novels/` |
 | 图片 | `Plana-EpicTankCommander/sth_ineed` | `images/` |
 | 音乐 | `Plana-EpicTankCommander/sth_ineed` | `musics/` |
-| 地图数据 | `Plana-EpicTankCommander/sth_ineed` | `maps/world-map.json`（由 `scripts/build-map-data.mjs` 生成后上传） |
+| 地图数据 | `Plana-EpicTankCommander/sth_ineed` | `maps/world-map.json` 与 `maps/east-asia-map.json` |
 
 > 内容清单：`sth_ineed` 仓库里的 GitHub Action 会在 `novels/`、`images/`、`musics/` 变更时生成根目录的 `manifest.json`。前端优先读取这份静态清单（不消耗 API 额度），读不到时自动回退到 GitHub API。
 
