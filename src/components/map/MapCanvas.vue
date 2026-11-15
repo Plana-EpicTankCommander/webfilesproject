@@ -17,7 +17,8 @@ const props = defineProps({
   zoom: { type: Number, default: 0 },
   fit: { type: String, default: 'contain' },
   showTitle: { type: Boolean, default: true },
-  showCompass: { type: Boolean, default: true }
+  showCompass: { type: Boolean, default: true },
+  showGraticule: { type: Boolean, default: false }
 })
 
 const host = ref(null)
@@ -41,7 +42,8 @@ function createMap() {
     zoom: props.zoom,
     fit: props.fit,
     showTitle: props.showTitle,
-    showCompass: props.showCompass
+    showCompass: props.showCompass,
+    showGraticule: props.showGraticule
   })
 }
 
@@ -73,6 +75,12 @@ watch(() => props.showTitle, (value) => {
   if (!map) return
   map.options.showTitle = value
   map.plate.hidden = !value || map.options.title === 'none'
+})
+
+watch(() => props.showGraticule, (value) => {
+  if (!map) return
+  map.options.showGraticule = value
+  map.invalidateQuality()
 })
 
 defineExpose({ getMap: () => map })

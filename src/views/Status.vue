@@ -166,6 +166,7 @@
               <tr><td><code>focus</code></td><td>初始聚焦的国家代码 / 行政区编号</td><td>无</td></tr>
               <tr><td><code>zoom</code></td><td>初始缩放倍数</td><td>全图</td></tr>
               <tr><td><code>fit</code></td><td><code>contain</code> 完整显示 / <code>cover</code> 铺满</td><td>contain</td></tr>
+              <tr><td><code>graticule</code></td><td>写 <code>on</code> 显示经纬网</td><td>不显示</td></tr>
               <tr><td><code>title</code></td><td>标题牌文字；<code>none</code> 隐藏</td><td>数据标题</td></tr>
             </tbody>
           </table>

@@ -539,9 +539,10 @@ const k = {
   zoom: 0,
   showTitle: !0,
   showCompass: !0,
+  showGraticule: !1,
   showLegend: !0,
   interactive: !0
-}, w = /* @__PURE__ */ new Map();
+}, v = /* @__PURE__ */ new Map();
 function O(h = {}) {
   return { ...k, ...h };
 }
@@ -584,8 +585,8 @@ function R(h) {
   return i;
 }
 async function q(h, t) {
-  if (w.has(h)) {
-    const i = w.get(h);
+  if (v.has(h)) {
+    const i = v.get(h);
     return i instanceof Promise, i;
   }
   const e = (async () => {
@@ -611,12 +612,12 @@ async function q(h, t) {
     const d = new TextDecoder("utf-8").decode(a);
     return JSON.parse(d);
   })();
-  w.set(h, e);
+  v.set(h, e);
   try {
     const i = await e;
-    return w.set(h, i), i;
+    return v.set(h, i), i;
   } catch (i) {
-    throw w.delete(h), i;
+    throw v.delete(h), i;
   }
 }
 class N {
@@ -1057,7 +1058,7 @@ class N {
     ), this.drawLabels(this.ctx), this.drawOverlays(this.ctx);
   }
   drawGraticule(t) {
-    !this.graticulePath || !this.ready || (t.save(), t.setTransform(
+    !this.options.showGraticule || !this.graticulePath || !this.ready || (t.save(), t.setTransform(
       this.dpr * this.scale,
       0,
       0,
@@ -1126,21 +1127,21 @@ class N {
       if (r >= o) break;
       const c = d.bbox, m = c[0] * this.scale + this.tx, g = c[1] * this.scale + this.ty, b = c[2] * this.scale + this.tx, H = c[3] * this.scale + this.ty;
       if (b < -30 || m > this.viewW + 30 || H < -20 || g > this.viewH + 20) continue;
-      const v = b - m, W = H - g;
-      if (v < 26 || W < 11) continue;
+      const S = b - m, W = H - g;
+      if (S < 26 || W < 11) continue;
       const y = d.label[0] * this.scale + this.tx, x = d.label[1] * this.scale + this.ty;
       if (y < 16 || y > this.viewW - 16 || x < 16 || x > this.viewH - 16) continue;
-      const S = Math.min(15, 11 + e * 0.55), A = `600 ${S}px "Noto Serif SC", "Songti SC", "STSong", "SimSun", Georgia, serif`;
+      const C = Math.min(15, 11 + e * 0.55), A = `600 ${C}px "Noto Serif SC", "Songti SC", "STSong", "SimSun", Georgia, serif`;
       t.font = A;
-      const C = d.nameZh || d.name, z = t.measureText(C).width;
-      if (z > Math.max(v * 1.45, 48) && e < 4.5 || e < 5 && C.length > 6 && v < 160) continue;
-      const f = {
+      const M = d.nameZh || d.name, z = t.measureText(M).width;
+      if (z > Math.max(S * 1.45, 48) && e < 4.5 || e < 5 && M.length > 6 && S < 160) continue;
+      const u = {
         x: y - z / 2 - 4,
-        y: x - S * 0.75 - 3,
+        y: x - C * 0.75 - 3,
         w: z + 8,
-        h: S * 1.5 + 6
+        h: C * 1.5 + 6
       };
-      f.x < 2 || f.x + f.w > this.viewW - 2 || f.y < 2 || f.y + f.h > this.viewH - 2 || l.some((u) => f.x < u.x + u.w && f.x + f.w > u.x && f.y < u.y + u.h && f.y + f.h > u.y) || n.some((u) => f.x < u.x + u.w && f.x + f.w > u.x && f.y < u.y + u.h && f.y + f.h > u.y) || (n.push(f), t.save(), t.globalAlpha = i * (e > 2.4 ? 0.92 : 0.74), "letterSpacing" in t && (t.letterSpacing = "1.4px"), t.strokeStyle = "rgba(3, 7, 9, 0.82)", t.lineWidth = 3.4, t.strokeText(C, y, x), t.fillStyle = "#f2e8d3", t.fillText(C, y, x), e > 2.9 && v > 84 && d.name && (t.globalAlpha = i * 0.45, t.font = '8px Georgia, "Times New Roman", serif', "letterSpacing" in t && (t.letterSpacing = "2.2px"), t.fillStyle = "#e4d6b9", t.fillText(d.name.toUpperCase(), y, x + S * 0.98)), t.restore(), r++);
+      u.x < 2 || u.x + u.w > this.viewW - 2 || u.y < 2 || u.y + u.h > this.viewH - 2 || l.some((f) => u.x < f.x + f.w && u.x + u.w > f.x && u.y < f.y + f.h && u.y + u.h > f.y) || n.some((f) => u.x < f.x + f.w && u.x + u.w > f.x && u.y < f.y + f.h && u.y + u.h > f.y) || (n.push(u), t.save(), t.globalAlpha = i * (e > 2.4 ? 0.92 : 0.74), "letterSpacing" in t && (t.letterSpacing = "1.4px"), t.strokeStyle = "rgba(3, 7, 9, 0.82)", t.lineWidth = 3.4, t.strokeText(M, y, x), t.fillStyle = "#f2e8d3", t.fillText(M, y, x), e > 2.9 && S > 84 && d.name && (t.globalAlpha = i * 0.45, t.font = '8px Georgia, "Times New Roman", serif', "letterSpacing" in t && (t.letterSpacing = "2.2px"), t.fillStyle = "#e4d6b9", t.fillText(d.name.toUpperCase(), y, x + C * 0.98)), t.restore(), r++);
     }
   }
   // ---------------------------------------------------------------------------
@@ -1372,12 +1373,12 @@ class N {
     }), this.host.__hoi4Map === this && delete this.host.__hoi4Map, this.data && (this.data = null);
   }
 }
-function M(h, t = !0) {
+function w(h, t = !0) {
   return h == null ? t : h !== "false" && h !== "0";
 }
 class _ extends HTMLElement {
   static get observedAttributes() {
-    return ["src", "height", "width", "title", "subtitle", "focus", "zoom", "fit", "show-title", "show-compass"];
+    return ["src", "height", "width", "title", "subtitle", "focus", "zoom", "fit", "show-title", "show-compass", "show-graticule"];
   }
   constructor() {
     super(), this._map = null, this._upgrading = !1;
@@ -1395,8 +1396,9 @@ class _ extends HTMLElement {
       focus: (this.getAttribute("focus") || "").toUpperCase(),
       zoom: Number.isFinite(e) ? e : 0,
       fit: this.getAttribute("fit") === "cover" ? "cover" : "contain",
-      showTitle: M(this.getAttribute("show-title")),
-      showCompass: M(this.getAttribute("show-compass"))
+      showTitle: w(this.getAttribute("show-title")),
+      showCompass: w(this.getAttribute("show-compass")),
+      showGraticule: w(this.getAttribute("show-graticule"), !1)
     });
   }
   disconnectedCallback() {
@@ -1438,22 +1440,24 @@ class _ extends HTMLElement {
       return;
     }
     if (t === "show-title") {
-      s.options.showTitle = M(i), s.plate.hidden = !s.options.showTitle || s.options.title === "none";
+      s.options.showTitle = w(i), s.plate.hidden = !s.options.showTitle || s.options.title === "none";
       return;
     }
     if (t === "show-compass") {
-      s.options.showCompass = M(i);
+      s.options.showCompass = w(i);
       const o = s.root.querySelector(".hm-compass");
       o && (o.hidden = !s.options.showCompass);
+      return;
     }
+    t === "show-graticule" && (s.options.showGraticule = w(i, !1), s.invalidateQuality());
   }
 }
-function I(h = "hoi4-map") {
+function G(h = "hoi4-map") {
   return typeof customElements > "u" ? !1 : (customElements.get(h) || customElements.define(h, _), !0);
 }
-I();
+G();
 export {
   N as Hoi4Map,
   _ as Hoi4MapElement,
-  I as defineHoi4Map
+  G as defineHoi4Map
 };

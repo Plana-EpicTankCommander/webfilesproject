@@ -108,6 +108,7 @@
 | `focus` | 初始聚焦：三位国家代码（如 `CHN`）或行政区编号（如 `CHN011`） | 无 |
 | `zoom` | 初始缩放倍数；配合 `focus` 可只给某个国家 | `0`（全图） |
 | `fit` | `contain` 完整显示 / `cover` 铺满画布 | `contain` |
+| `graticule` | 写 `on` 显示经纬网；默认不显示 | `off` |
 | `title` | 标题牌文字；写 `none` 可隐藏 | 数据里的标题 |
 
 交互：滚轮以指针位置为中心缩放，单指 / 鼠标拖动平移，双指捏合，双击放大或复位；悬停显示一级行政区名称，点击国家打开信息卡。键盘聚焦后支持 `+` / `-` / `0` / 方向键 / `Esc`。
@@ -130,7 +131,7 @@
 ></hoi4-map>
 ```
 
-可用属性：`src`、`height`、`width`、`title`、`subtitle`、`focus`、`zoom`、`fit`、`show-title`、`show-compass`；不写 `src` 时默认读取 `sth_ineed/maps/world-map.json`。地图内部是 Shadow DOM，不会和页面样式打架。完整示例见仓库根目录的 `map-demo.html`（构建后访问 `/map-demo.html`）。
+可用属性：`src`、`height`、`width`、`title`、`subtitle`、`focus`、`zoom`、`fit`、`show-title`、`show-compass`、`show-graticule`；不写 `src` 时默认读取 `sth_ineed/maps/world-map.json`。地图内部是 Shadow DOM，不会和页面样式打架。完整示例见仓库根目录的 `map-demo.html`（构建后访问 `/map-demo.html`）。
 
 ### 📄 插入 PDF
 

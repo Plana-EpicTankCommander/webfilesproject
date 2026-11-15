@@ -14,7 +14,7 @@ function boolAttr(value, fallback = true) {
 
 export class Hoi4MapElement extends HTMLElement {
   static get observedAttributes() {
-    return ['src', 'height', 'width', 'title', 'subtitle', 'focus', 'zoom', 'fit', 'show-title', 'show-compass']
+    return ['src', 'height', 'width', 'title', 'subtitle', 'focus', 'zoom', 'fit', 'show-title', 'show-compass', 'show-graticule']
   }
 
   constructor() {
@@ -38,7 +38,8 @@ export class Hoi4MapElement extends HTMLElement {
       zoom: Number.isFinite(zoom) ? zoom : 0,
       fit: this.getAttribute('fit') === 'cover' ? 'cover' : 'contain',
       showTitle: boolAttr(this.getAttribute('show-title')),
-      showCompass: boolAttr(this.getAttribute('show-compass'))
+      showCompass: boolAttr(this.getAttribute('show-compass')),
+      showGraticule: boolAttr(this.getAttribute('show-graticule'), false)
     })
   }
 
@@ -98,6 +99,11 @@ export class Hoi4MapElement extends HTMLElement {
       map.options.showCompass = boolAttr(value)
       const compass = map.root.querySelector('.hm-compass')
       if (compass) compass.hidden = !map.options.showCompass
+      return
+    }
+    if (name === 'show-graticule') {
+      map.options.showGraticule = boolAttr(value, false)
+      map.invalidateQuality()
     }
   }
 }

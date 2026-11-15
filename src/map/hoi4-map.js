@@ -24,6 +24,7 @@ const DEFAULTS = {
   zoom: 0,
   showTitle: true,
   showCompass: true,
+  showGraticule: false,
   showLegend: true,
   interactive: true
 }
@@ -978,7 +979,7 @@ export class Hoi4Map {
   }
 
   drawGraticule(ctx) {
-    if (!this.graticulePath || !this.ready) return
+    if (!this.options.showGraticule || !this.graticulePath || !this.ready) return
     ctx.save()
     ctx.setTransform(
       this.dpr * this.scale, 0, 0, this.dpr * this.scale,

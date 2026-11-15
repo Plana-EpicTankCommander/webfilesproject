@@ -510,7 +510,8 @@ function mountEmbeds() {
       title: host.dataset.mapTitle || '',
       focus: host.dataset.mapFocus || '',
       zoom: Number.isFinite(zoom) ? zoom : 0,
-      fit: host.dataset.mapFit || 'contain'
+      fit: host.dataset.mapFit || 'contain',
+      showGraticule: host.dataset.mapGraticule === 'true'
     })
     app.mount(host)
     mountedApps.push(app)

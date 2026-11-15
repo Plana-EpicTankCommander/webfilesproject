@@ -301,7 +301,8 @@ function parseMapMarker(content) {
     title: options.title || '',
     focus: (options.focus || '').toUpperCase(),
     zoom: Number.isFinite(parsedZoom) ? Math.min(32, Math.max(1, parsedZoom)) : 0,
-    fit: options.fit === 'cover' ? 'cover' : 'contain'
+    fit: options.fit === 'cover' ? 'cover' : 'contain',
+    showGraticule: ['on', 'true', '1'].includes(String(options.graticule || '').toLowerCase())
   }
 }
 
@@ -324,6 +325,7 @@ export async function resolveMapMarkers(html) {
       + ` data-map-focus="${escapeHtmlAttribute(marker.focus)}"`
       + ` data-map-zoom="${marker.zoom}"`
       + ` data-map-fit="${marker.fit}"`
+      + ` data-map-graticule="${marker.showGraticule}"`
       + `></div>`
     result = result.replace(match[0], () => host)
   }
