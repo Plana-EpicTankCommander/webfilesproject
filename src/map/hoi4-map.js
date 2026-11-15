@@ -29,6 +29,7 @@ const DEFAULTS = {
   showDivisionBorders: false,
   showProvinceShading: false,
   detailCountries: null,
+  outlineCountries: null,
   onDivisionClick: null,
   data: null,
   interactive: true
@@ -526,6 +527,7 @@ export class Hoi4Map {
     const national = new Set([...(data.coast || []), ...(data.borders || [])])
     const detail = new Set(this.options.detailCountries || data.meta.detailCountries || [])
     this.detailCountryCodes = [...detail]
+    this.outlineCountryCodes = [...new Set(this.options.outlineCountries || data.meta.outlineCountries || [])]
     if (this.options.showDivisionBorders) {
       const internal = []
       for (let i = 0; i < data.arcs.length; i++) {
@@ -1124,10 +1126,11 @@ export class Hoi4Map {
       ctx.strokeStyle = 'rgba(238, 215, 168, 0.10)'
       ctx.stroke(this.borderPath)
     }
-    if (this.detailCountryCodes.length) {
+    const outlineCodes = [...new Set([...this.detailCountryCodes, ...this.outlineCountryCodes])]
+    if (outlineCodes.length) {
       ctx.lineWidth = 1.8 / scale
       ctx.strokeStyle = 'rgba(7, 7, 5, 0.96)'
-      for (const code of this.detailCountryCodes) {
+      for (const code of outlineCodes) {
         const path = this.countryPaths.get(code)
         if (path) ctx.stroke(path)
       }

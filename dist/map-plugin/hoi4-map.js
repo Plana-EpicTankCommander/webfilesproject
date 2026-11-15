@@ -544,6 +544,7 @@ const T = {
   showDivisionBorders: !1,
   showProvinceShading: !1,
   detailCountries: null,
+  outlineCountries: null,
   onDivisionClick: null,
   data: null,
   interactive: !0
@@ -599,23 +600,23 @@ async function q(h, t) {
     if (!i.ok) throw new Error(`地图数据请求失败：HTTP ${i.status}`);
     const s = Number(i.headers.get("content-length")) || 0;
     if (!i.body || !s) {
-      const c = await i.json();
-      return t?.(1), c;
+      const d = await i.json();
+      return t?.(1), d;
     }
     const o = i.body.getReader(), r = [];
     let a = 0;
     for (; ; ) {
-      const { done: c, value: m } = await o.read();
-      if (c) break;
+      const { done: d, value: m } = await o.read();
+      if (d) break;
       r.push(m), a += m.length, t?.(p(a / s, 0, 1));
     }
     t?.(1);
     const n = new Uint8Array(a);
     let l = 0;
-    for (const c of r)
-      n.set(c, l), l += c.length;
-    const d = new TextDecoder("utf-8").decode(n);
-    return JSON.parse(d);
+    for (const d of r)
+      n.set(d, l), l += d.length;
+    const c = new TextDecoder("utf-8").decode(n);
+    return JSON.parse(c);
   })();
   C.set(h, e);
   try {
@@ -789,9 +790,9 @@ class N {
       if (!a.length) continue;
       const n = this.pathFromRings(a), l = this.boundsOfRings(a);
       r._rings = a, r._path = n, r._bbox = l;
-      const d = this.options.showProvinceShading ? r.color : this.countryByCode.get(r.country)?.color || r.color;
-      let c = this.fillGroups.get(d);
-      c || (c = new Path2D(), this.fillGroups.set(d, c)), c.addPath(n);
+      const c = this.options.showProvinceShading ? r.color : this.countryByCode.get(r.country)?.color || r.color;
+      let d = this.fillGroups.get(c);
+      d || (d = new Path2D(), this.fillGroups.set(c, d)), d.addPath(n);
       const m = p(Math.floor((l[0] - t.meta.width * 0) / i.cell), 0, i.cols - 1), g = p(Math.floor(l[2] / i.cell), 0, i.cols - 1), S = p(Math.floor(l[1] / i.cell), 0, i.rows - 1), M = p(Math.floor(l[3] / i.cell), 0, i.rows - 1);
       for (let b = S; b <= M; b++)
         for (let v = m; v <= g; v++)
@@ -800,7 +801,7 @@ class N {
     }
     this.grid = i, this.byDivision = e, this.labelCountries = [...t.countries].sort((r, a) => a.area - r.area), this.coastPath = this.pathFromArcList(t.coast || []), this.borderPath = this.pathFromArcList(t.borders || []), this.graticulePath = this.pathFromGraticule(t.graticule || []), this.divisionBorderPath = null, this.detailBorderPath = null, this.detailCountryCodes = [];
     const s = /* @__PURE__ */ new Set([...t.coast || [], ...t.borders || []]), o = new Set(this.options.detailCountries || t.meta.detailCountries || []);
-    if (this.detailCountryCodes = [...o], this.options.showDivisionBorders) {
+    if (this.detailCountryCodes = [...o], this.outlineCountryCodes = [...new Set(this.options.outlineCountries || t.meta.outlineCountries || [])], this.options.showDivisionBorders) {
       const r = [];
       for (let a = 0; a < t.arcs.length; a++)
         s.has(a) || r.push(a);
@@ -811,9 +812,9 @@ class N {
         if (o.has(a.country))
           for (const n of a.polygons || [])
             for (const l of n)
-              for (const d of l) {
-                const c = d < 0 ? ~d : d;
-                s.has(c) || r.add(c);
+              for (const c of l) {
+                const d = c < 0 ? ~c : c;
+                s.has(d) || r.add(d);
               }
       r.size && (this.detailBorderPath = this.pathFromArcList([...r]));
     }
@@ -894,9 +895,9 @@ class N {
     const t = this.frame.getBoundingClientRect();
     if (t.width < 2 || t.height < 2) return;
     if (this.ready && this.data && this.explicitHeightPx && document.fullscreenElement !== this.frame) {
-      const d = this.data.meta.width / this.data.meta.height, c = t.width < 760 ? Math.round(Math.max(280, Math.min(this.explicitHeightPx, t.width / d + 128))) : Math.round(this.explicitHeightPx);
-      if (Math.abs(t.height - c) > 2) {
-        this.frame.style.setProperty("--hm-height", `${c}px`);
+      const c = this.data.meta.width / this.data.meta.height, d = t.width < 760 ? Math.round(Math.max(280, Math.min(this.explicitHeightPx, t.width / c + 128))) : Math.round(this.explicitHeightPx);
+      if (Math.abs(t.height - d) > 2) {
+        this.frame.style.setProperty("--hm-height", `${d}px`);
         return;
       }
     }
@@ -905,8 +906,8 @@ class N {
     const n = Math.round((this.viewW + this.snapMargin * 2) * this.dpr), l = Math.round((this.viewH + this.snapMargin * 2) * this.dpr);
     if (this.mapCanvas || (this.mapCanvas = document.createElement("canvas")), this.mapCanvas.width = Math.max(1, n), this.mapCanvas.height = Math.max(1, l), this.mapCtx = this.mapCanvas.getContext("2d"), this.snapshot = null, this.buildOcean(), this.ready && this.data) {
       if (this.fitScale = this.computeFitScale(), e > 0 && i > 0) {
-        const d = i / e;
-        this.scale = p(this.fitScale * d, this.fitScale * 1, this.fitScale * 32), this.tx = this.viewW / 2 - r * this.scale, this.ty = this.viewH / 2 - a * this.scale;
+        const c = i / e;
+        this.scale = p(this.fitScale * c, this.fitScale * 1, this.fitScale * 32), this.tx = this.viewW / 2 - r * this.scale, this.ty = this.viewH / 2 - a * this.scale;
       } else
         this.scale = this.fitScale, this.tx = (this.viewW - this.data.meta.width * this.scale) / 2, this.ty = (this.viewH - this.data.meta.height * this.scale) / 2;
       this.clampTransform(), this.updateToolbar(), this.invalidateQuality();
@@ -939,14 +940,14 @@ class N {
     }
     if (!i)
       return this.resetView(!1), !1;
-    const [s, o, r, a] = i.bbox, n = Number.isFinite(i.label?.[0]) ? i.label[0] : (s + r) / 2, l = Number.isFinite(i.label?.[1]) ? i.label[1] : (o + a) / 2, d = Math.max(r - s, a - o);
-    let c = Math.max(1.2, Math.min(32, e));
-    if (d > 0 && d < 220) {
-      const g = Math.min(this.viewW, this.viewH) * 0.5 / (d * this.fitScale);
-      c = Math.max(c, p(g, 2.6, 32));
+    const [s, o, r, a] = i.bbox, n = Number.isFinite(i.label?.[0]) ? i.label[0] : (s + r) / 2, l = Number.isFinite(i.label?.[1]) ? i.label[1] : (o + a) / 2, c = Math.max(r - s, a - o);
+    let d = Math.max(1.2, Math.min(32, e));
+    if (c > 0 && c < 220) {
+      const g = Math.min(this.viewW, this.viewH) * 0.5 / (c * this.fitScale);
+      d = Math.max(d, p(g, 2.6, 32));
     }
     const m = p(
-      this.fitScale * c,
+      this.fitScale * d,
       this.fitScale * 1,
       this.fitScale * 32
     );
@@ -1005,8 +1006,8 @@ class N {
     }
     i.lineWidth = 0.7;
     for (let a = 0; a < 18; a++) {
-      const n = Math.random() * this.viewH, l = Math.random() * this.viewW, d = 30 + Math.random() * 150;
-      i.beginPath(), i.strokeStyle = `rgba(142, 178, 188, ${0.012 + Math.random() * 0.018})`, i.moveTo(l, n), i.bezierCurveTo(l + d * 0.3, n - 5, l + d * 0.7, n + 5, l + d, n), i.stroke();
+      const n = Math.random() * this.viewH, l = Math.random() * this.viewW, c = 30 + Math.random() * 150;
+      i.beginPath(), i.strokeStyle = `rgba(142, 178, 188, ${0.012 + Math.random() * 0.018})`, i.moveTo(l, n), i.bezierCurveTo(l + c * 0.3, n - 5, l + c * 0.7, n + 5, l + c, n), i.stroke();
     }
   }
   renderEmpty() {
@@ -1105,22 +1106,24 @@ class N {
     t.save(), t.setTransform(this.dpr * s, 0, 0, this.dpr * s, this.dpr * e, this.dpr * i), t.lineJoin = "round", t.lineCap = "round";
     const o = this.scale / this.fitScale;
     if (this.coastPath && o > 1.18) {
-      const r = p(0.45 + o * 0.1, 0.45, 1), a = [
+      const a = p(0.45 + o * 0.1, 0.45, 1), n = [
         [4.5, "rgba(201, 168, 106, 0.018)"],
         [2.5, "rgba(0, 4, 6, 0.08)"],
         [1.3, "rgba(0, 3, 5, 0.12)"],
         [0.65, "rgba(0, 2, 4, 0.18)"]
       ];
-      for (const [n, l] of a)
-        t.lineWidth = n * r / s, t.strokeStyle = l, t.stroke(this.coastPath);
+      for (const [l, c] of n)
+        t.lineWidth = l * a / s, t.strokeStyle = c, t.stroke(this.coastPath);
     }
-    for (const [r, a] of this.fillGroups)
-      t.fillStyle = r, t.fill(a);
-    if (this.detailBorderPath && s > this.fitScale * 1.55 && (t.lineWidth = 0.55 / s, t.strokeStyle = "rgba(18, 15, 11, 0.42)", t.stroke(this.detailBorderPath)), this.divisionBorderPath && (t.lineWidth = 0.7 / s, t.strokeStyle = "rgba(18, 15, 11, 0.52)", t.stroke(this.divisionBorderPath)), this.coastPath && (t.lineWidth = 1.25 / s, t.strokeStyle = "rgba(7, 7, 5, 0.95)", t.stroke(this.coastPath)), this.borderPath && (t.lineWidth = 1.55 / s, t.strokeStyle = "rgba(22, 16, 10, 0.93)", t.stroke(this.borderPath), t.lineWidth = 0.55 / s, t.strokeStyle = "rgba(238, 215, 168, 0.10)", t.stroke(this.borderPath)), this.detailCountryCodes.length) {
+    for (const [a, n] of this.fillGroups)
+      t.fillStyle = a, t.fill(n);
+    this.detailBorderPath && s > this.fitScale * 1.55 && (t.lineWidth = 0.55 / s, t.strokeStyle = "rgba(18, 15, 11, 0.42)", t.stroke(this.detailBorderPath)), this.divisionBorderPath && (t.lineWidth = 0.7 / s, t.strokeStyle = "rgba(18, 15, 11, 0.52)", t.stroke(this.divisionBorderPath)), this.coastPath && (t.lineWidth = 1.25 / s, t.strokeStyle = "rgba(7, 7, 5, 0.95)", t.stroke(this.coastPath)), this.borderPath && (t.lineWidth = 1.55 / s, t.strokeStyle = "rgba(22, 16, 10, 0.93)", t.stroke(this.borderPath), t.lineWidth = 0.55 / s, t.strokeStyle = "rgba(238, 215, 168, 0.10)", t.stroke(this.borderPath));
+    const r = [.../* @__PURE__ */ new Set([...this.detailCountryCodes, ...this.outlineCountryCodes])];
+    if (r.length) {
       t.lineWidth = 1.8 / s, t.strokeStyle = "rgba(7, 7, 5, 0.96)";
-      for (const r of this.detailCountryCodes) {
-        const a = this.countryPaths.get(r);
-        a && t.stroke(a);
+      for (const a of r) {
+        const n = this.countryPaths.get(a);
+        n && t.stroke(n);
       }
     }
     t.restore();
@@ -1152,36 +1155,36 @@ class N {
     ), r = [];
     let a = 0;
     const n = this.frame.getBoundingClientRect(), l = [];
-    for (const d of [this.plate, this.toolbar, this.legend]) {
-      if (!d || d.hidden) continue;
-      const c = d.getBoundingClientRect();
-      c.width < 1 || c.height < 1 || l.push({
-        x: c.left - n.left - 8,
-        y: c.top - n.top - 8,
-        w: c.width + 16,
-        h: c.height + 16
+    for (const c of [this.plate, this.toolbar, this.legend]) {
+      if (!c || c.hidden) continue;
+      const d = c.getBoundingClientRect();
+      d.width < 1 || d.height < 1 || l.push({
+        x: d.left - n.left - 8,
+        y: d.top - n.top - 8,
+        w: d.width + 16,
+        h: d.height + 16
       });
     }
     t.setTransform(this.dpr, 0, 0, this.dpr, 0, 0), t.textAlign = "center", t.textBaseline = "middle", t.lineJoin = "round";
-    for (const d of this.labelCountries) {
+    for (const c of this.labelCountries) {
       if (a >= o) break;
-      const c = d.bbox, m = c[0] * this.scale + this.tx, g = c[1] * this.scale + this.ty, S = c[2] * this.scale + this.tx, M = c[3] * this.scale + this.ty;
+      const d = c.bbox, m = d[0] * this.scale + this.tx, g = d[1] * this.scale + this.ty, S = d[2] * this.scale + this.tx, M = d[3] * this.scale + this.ty;
       if (S < -30 || m > this.viewW + 30 || M < -20 || g > this.viewH + 20) continue;
       const b = S - m, v = M - g;
       if (b < 26 || v < 11) continue;
-      const x = d.label[0] * this.scale + this.tx, w = d.label[1] * this.scale + this.ty;
+      const x = c.label[0] * this.scale + this.tx, w = c.label[1] * this.scale + this.ty;
       if (x < 16 || x > this.viewW - 16 || w < 16 || w > this.viewH - 16) continue;
       const k = Math.min(15, 11 + e * 0.55), A = `600 ${k}px "Noto Serif SC", "Songti SC", "STSong", "SimSun", Georgia, serif`;
       t.font = A;
-      const z = d.nameZh || d.name, P = t.measureText(z).width;
+      const z = c.nameZh || c.name, P = t.measureText(z).width;
       if (P > Math.max(b * 1.45, 48) && e < 4.5 || e < 5 && z.length > 6 && b < 160) continue;
-      const f = {
+      const u = {
         x: x - P / 2 - 4,
         y: w - k * 0.75 - 3,
         w: P + 8,
         h: k * 1.5 + 6
       };
-      f.x < 2 || f.x + f.w > this.viewW - 2 || f.y < 2 || f.y + f.h > this.viewH - 2 || l.some((u) => f.x < u.x + u.w && f.x + f.w > u.x && f.y < u.y + u.h && f.y + f.h > u.y) || r.some((u) => f.x < u.x + u.w && f.x + f.w > u.x && f.y < u.y + u.h && f.y + f.h > u.y) || (r.push(f), t.save(), t.globalAlpha = i * (e > 2.4 ? 0.92 : 0.74), "letterSpacing" in t && (t.letterSpacing = "1.4px"), t.strokeStyle = "rgba(3, 7, 9, 0.82)", t.lineWidth = 3.4, t.strokeText(z, x, w), t.fillStyle = "#f2e8d3", t.fillText(z, x, w), e > 2.9 && b > 84 && d.name && (t.globalAlpha = i * 0.45, t.font = '8px Georgia, "Times New Roman", serif', "letterSpacing" in t && (t.letterSpacing = "2.2px"), t.fillStyle = "#e4d6b9", t.fillText(d.name.toUpperCase(), x, w + k * 0.98)), t.restore(), a++);
+      u.x < 2 || u.x + u.w > this.viewW - 2 || u.y < 2 || u.y + u.h > this.viewH - 2 || l.some((f) => u.x < f.x + f.w && u.x + u.w > f.x && u.y < f.y + f.h && u.y + u.h > f.y) || r.some((f) => u.x < f.x + f.w && u.x + u.w > f.x && u.y < f.y + f.h && u.y + u.h > f.y) || (r.push(u), t.save(), t.globalAlpha = i * (e > 2.4 ? 0.92 : 0.74), "letterSpacing" in t && (t.letterSpacing = "1.4px"), t.strokeStyle = "rgba(3, 7, 9, 0.82)", t.lineWidth = 3.4, t.strokeText(z, x, w), t.fillStyle = "#f2e8d3", t.fillText(z, x, w), e > 2.9 && b > 84 && c.name && (t.globalAlpha = i * 0.45, t.font = '8px Georgia, "Times New Roman", serif', "letterSpacing" in t && (t.letterSpacing = "2.2px"), t.fillStyle = "#e4d6b9", t.fillText(c.name.toUpperCase(), x, w + k * 0.98)), t.restore(), a++);
     }
   }
   // ---------------------------------------------------------------------------
@@ -1192,10 +1195,10 @@ class N {
     const { cols: i, rows: s, cell: o, cells: r } = this.grid;
     if (t < 0 || e < 0 || t > this.data.meta.width || e > this.data.meta.height) return null;
     const a = p(Math.floor(t / o), 0, i - 1), n = p(Math.floor(e / o), 0, s - 1), l = r[n * i + a];
-    for (let d = l.length - 1; d >= 0; d--) {
-      const c = l[d], m = c._bbox;
-      if (!(!m || t < m[0] || t > m[2] || e < m[1] || e > m[3]) && this.pointInRings(c._rings, t, e))
-        return c;
+    for (let c = l.length - 1; c >= 0; c--) {
+      const d = l[c], m = d._bbox;
+      if (!(!m || t < m[0] || t > m[2] || e < m[1] || e > m[3]) && this.pointInRings(d._rings, t, e))
+        return d;
     }
     return null;
   }
@@ -1203,8 +1206,8 @@ class N {
     let s = !1;
     for (const o of t)
       for (let r = 0, a = o.length - 1; r < o.length; a = r++) {
-        const n = o[r][0], l = o[r][1], d = o[a][0], c = o[a][1];
-        l > i != c > i && e < (d - n) * (i - l) / (c - l || 1e-9) + n && (s = !s);
+        const n = o[r][0], l = o[r][1], c = o[a][0], d = o[a][1];
+        l > i != d > i && e < (c - n) * (i - l) / (d - l || 1e-9) + n && (s = !s);
       }
     return s;
   }
@@ -1256,8 +1259,8 @@ class N {
         this.pinch.scale * (s / this.pinch.distance),
         this.fitScale * 1,
         this.fitScale * 32
-      ), n = this.canvas.getBoundingClientRect(), l = this.pinch.midX - n.left, d = this.pinch.midY - n.top, c = (l - this.pinch.tx) / this.pinch.scale, m = (d - this.pinch.ty) / this.pinch.scale;
-      this.scale = a, this.tx = o - n.left - c * a, this.ty = r - n.top - m * a, this.clampTransform(), this.updateToolbar(), this.invalidateFast(), this.scheduleQuality(220);
+      ), n = this.canvas.getBoundingClientRect(), l = this.pinch.midX - n.left, c = this.pinch.midY - n.top, d = (l - this.pinch.tx) / this.pinch.scale, m = (c - this.pinch.ty) / this.pinch.scale;
+      this.scale = a, this.tx = o - n.left - d * a, this.ty = r - n.top - m * a, this.clampTransform(), this.updateToolbar(), this.invalidateFast(), this.scheduleQuality(220);
       return;
     }
     if (this.drag && this.pointers.size === 1) {
