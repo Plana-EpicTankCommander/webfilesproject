@@ -113,7 +113,7 @@
 
 交互：滚轮以指针位置为中心缩放，单指 / 鼠标拖动平移，双指捏合，双击放大或复位；悬停显示一级行政区名称，点击国家打开信息卡。键盘聚焦后支持 `+` / `-` / `0` / 方向键 / `Esc`。
 
-地图外观是低饱和政治色 + 暗色海面 + 细金线 + 纸纹；行政区的颜色会形成轻微色块，但**渲染时不描一级行政区边界**，只描海岸线与国界。缩放时线宽保持屏幕像素级，不会跟着地图一起变粗。
+地图外观是低饱和政治色 + 暗色海面 + 细金线 + 纸纹。**默认同一国家使用纯色填充**，不显示行政区色差；需要色块时给组件加 `show-province-shading="true"`。**渲染时不描一级行政区边界**，只描海岸线与国界；缩放时线宽保持屏幕像素级，不会跟着地图一起变粗。
 
 地图数据不在本站的构建产物里，而是和文章一起放在内容仓库 `sth_ineed/maps/`，由前端通过 `raw.githubusercontent.com` 读取。当前提供：
 
@@ -134,7 +134,7 @@
 ></hoi4-map>
 ```
 
-可用属性：`src`、`height`、`width`、`title`、`subtitle`、`focus`、`zoom`、`fit`、`show-title`、`show-compass`、`show-graticule`；不写 `src` 时默认读取 `sth_ineed/maps/world-map.json`。地图内部是 Shadow DOM，不会和页面样式打架。完整示例见仓库根目录的 `map-demo.html`（构建后访问 `/map-demo.html`）。
+可用属性：`src`、`height`、`width`、`title`、`subtitle`、`focus`、`zoom`、`fit`、`show-title`、`show-compass`、`show-graticule`、`show-province-shading`；不写 `src` 时默认读取 `sth_ineed/maps/world-map.json`。地图内部是 Shadow DOM，不会和页面样式打架。完整示例见仓库根目录的 `map-demo.html`（构建后访问 `/map-demo.html`）。
 
 ### 🧰 地图编辑器
 

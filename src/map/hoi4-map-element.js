@@ -14,7 +14,7 @@ function boolAttr(value, fallback = true) {
 
 export class Hoi4MapElement extends HTMLElement {
   static get observedAttributes() {
-    return ['src', 'height', 'width', 'title', 'subtitle', 'focus', 'zoom', 'fit', 'show-title', 'show-compass', 'show-graticule']
+    return ['src', 'height', 'width', 'title', 'subtitle', 'focus', 'zoom', 'fit', 'show-title', 'show-compass', 'show-graticule', 'show-province-shading']
   }
 
   constructor() {
@@ -39,7 +39,8 @@ export class Hoi4MapElement extends HTMLElement {
       fit: this.getAttribute('fit') === 'cover' ? 'cover' : 'contain',
       showTitle: boolAttr(this.getAttribute('show-title')),
       showCompass: boolAttr(this.getAttribute('show-compass')),
-      showGraticule: boolAttr(this.getAttribute('show-graticule'), false)
+      showGraticule: boolAttr(this.getAttribute('show-graticule'), false),
+      showProvinceShading: boolAttr(this.getAttribute('show-province-shading'), false)
     })
   }
 
@@ -104,6 +105,11 @@ export class Hoi4MapElement extends HTMLElement {
     if (name === 'show-graticule') {
       map.options.showGraticule = boolAttr(value, false)
       map.invalidateQuality()
+      return
+    }
+    if (name === 'show-province-shading') {
+      map.options.showProvinceShading = boolAttr(value, false)
+      map.setData(map.data)
     }
   }
 }

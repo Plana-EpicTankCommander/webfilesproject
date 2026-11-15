@@ -27,6 +27,7 @@ const DEFAULTS = {
   showGraticule: false,
   showLegend: true,
   showDivisionBorders: false,
+  showProvinceShading: false,
   onDivisionClick: null,
   data: null,
   interactive: true
@@ -468,6 +469,7 @@ export class Hoi4Map {
     this.hoverDivision = null
     this.hoverCountry = null
     this.selectedCountry = null
+    this.countryByCode = new Map(data.countries.map((country) => [country.code, country]))
 
     const byDivision = new Map()
     const grid = {
@@ -488,10 +490,13 @@ export class Hoi4Map {
       division._path = path
       division._bbox = bbox
 
-      let group = this.fillGroups.get(division.color)
+      const fillColor = this.options.showProvinceShading
+        ? division.color
+        : (this.countryByCode.get(division.country)?.color || division.color)
+      let group = this.fillGroups.get(fillColor)
       if (!group) {
         group = new Path2D()
-        this.fillGroups.set(division.color, group)
+        this.fillGroups.set(fillColor, group)
       }
       group.addPath(path)
 
@@ -509,7 +514,6 @@ export class Hoi4Map {
 
     this.grid = grid
     this.byDivision = byDivision
-    this.countryByCode = new Map(data.countries.map((country) => [country.code, country]))
     this.labelCountries = [...data.countries].sort((a, b) => b.area - a.area)
 
     this.coastPath = this.pathFromArcList(data.coast || [])
@@ -1568,7 +1572,10 @@ export class Hoi4Map {
     this.tooltipCountry.textContent = `${country.code} · ${country.nameZh}`
     this.tooltipName.textContent = division.nameZh || division.name
     this.tooltipSub.textContent = `一级行政区 · ${country.name}`
-    this.tooltip.style.setProperty('--hm-tt-color', division.color)
+    this.tooltip.style.setProperty(
+      '--hm-tt-color',
+      this.options.showProvinceShading ? division.color : country.color
+    )
     this.tooltip.classList.add('is-visible')
 
     const tw = this.tooltip.offsetWidth

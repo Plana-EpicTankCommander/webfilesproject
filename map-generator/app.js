@@ -520,6 +520,7 @@ function createMap() {
     title: state.data.meta.title || '',
     subtitle: state.data.meta.titleEn || '',
     showDivisionBorders: true,
+    showProvinceShading: state.shadeVariation,
     showGraticule: false,
     showLegend: false,
     onDivisionClick: (division) => assignDivision(division.id)
@@ -855,6 +856,7 @@ function bindEvents() {
 
   shadeVariationInput.addEventListener('change', () => {
     state.shadeVariation = shadeVariationInput.checked
+    if (state.map) state.map.options.showProvinceShading = state.shadeVariation
     applyProvinceColors()
     rebuildMap()
     showToast(state.shadeVariation ? '已开启省份色差。' : '已关闭省份色差，同一国家使用纯色。')
