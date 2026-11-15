@@ -198,7 +198,7 @@
 
 ## 地图数据格式
 
-`sth_ineed/maps/world-map.json` 是地图的唯一基础素材。顶层字段：
+`sth_ineed/maps/world-map.json` 是地图的唯一基础素材。它是**混合缩进**的可读 JSON：`meta`、`countries`、`divisions` 逐字段换行，`arcs` / `graticule` 每 12 个数字换一行，而不是压缩成一行。顶层字段：
 
 | 字段 | 含义 |
 |------|------|
