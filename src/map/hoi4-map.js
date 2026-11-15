@@ -26,6 +26,9 @@ const DEFAULTS = {
   showCompass: true,
   showGraticule: false,
   showLegend: true,
+  showDivisionBorders: false,
+  onDivisionClick: null,
+  data: null,
   interactive: true
 }
 
@@ -195,7 +198,45 @@ export class Hoi4Map {
     this.observeResize()
     this.makeGrain()
     this.resize()
-    this.load()
+    if (this.options.data) this.useData(this.options.data)
+    else this.load()
+  }
+
+  useData(data) {
+    this.data = data
+    this.ready = true
+    this.prepare(data)
+    this.frame.dataset.busy = 'false'
+    this.loading.hidden = true
+    this.pendingReveal = false
+    this.fitScale = this.computeFitScale()
+    this.resize()
+    this.applyInitialView()
+    this.updateChrome()
+    this.updateToolbar()
+    this.invalidateQuality()
+  }
+
+  setData(data) {
+    if (this.destroyed || !data) return
+    const oldWidth = this.data?.meta?.width
+    const oldHeight = this.data?.meta?.height
+    this.hideTooltip()
+    this.clearSelection()
+    this.ready = true
+    this.prepare(data)
+    this.fitScale = this.computeFitScale()
+    const dimensionsChanged = oldWidth !== data.meta.width || oldHeight !== data.meta.height
+    if (dimensionsChanged) {
+      this.scale = this.fitScale
+      this.tx = (this.viewW - data.meta.width * this.scale) / 2
+      this.ty = (this.viewH - data.meta.height * this.scale) / 2
+    }
+    this.clampTransform()
+    this.updateChrome()
+    this.updateToolbar()
+    this.snapshot = null
+    this.invalidateQuality()
   }
 
   // ---------------------------------------------------------------------------
@@ -474,6 +515,15 @@ export class Hoi4Map {
     this.coastPath = this.pathFromArcList(data.coast || [])
     this.borderPath = this.pathFromArcList(data.borders || [])
     this.graticulePath = this.pathFromGraticule(data.graticule || [])
+    this.divisionBorderPath = null
+    if (this.options.showDivisionBorders) {
+      const national = new Set([...(data.coast || []), ...(data.borders || [])])
+      const internal = []
+      for (let i = 0; i < data.arcs.length; i++) {
+        if (!national.has(i)) internal.push(i)
+      }
+      this.divisionBorderPath = this.pathFromArcList(internal)
+    }
     this.countryPaths = new Map()
     for (const country of data.countries) {
       const path = this.pathFromArcList(country.arcs || [])
@@ -1025,6 +1075,12 @@ export class Hoi4Map {
       ctx.fill(path)
     }
 
+    if (this.divisionBorderPath) {
+      ctx.lineWidth = 0.7 / scale
+      ctx.strokeStyle = 'rgba(18, 15, 11, 0.52)'
+      ctx.stroke(this.divisionBorderPath)
+    }
+
     // National outline + coastline. There are deliberately no internal
     // first-level boundaries in the base render.
     if (this.coastPath) {
@@ -1365,8 +1421,15 @@ export class Hoi4Map {
     const point = this.canvasPoint(event.clientX, event.clientY)
     const world = this.worldPoint(point.x, point.y)
     const division = this.pick(world.x, world.y)
-    if (division) this.selectCountry(division.country)
-    else this.clearSelection()
+    if (division) {
+      if (typeof this.options.onDivisionClick === 'function') {
+        this.options.onDivisionClick(division, this)
+      } else {
+        this.selectCountry(division.country)
+      }
+    } else {
+      this.clearSelection()
+    }
   }
 
   onWheel(event) {

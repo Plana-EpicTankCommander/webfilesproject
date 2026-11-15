@@ -136,16 +136,16 @@
 
 可用属性：`src`、`height`、`width`、`title`、`subtitle`、`focus`、`zoom`、`fit`、`show-title`、`show-compass`、`show-graticule`；不写 `src` 时默认读取 `sth_ineed/maps/world-map.json`。地图内部是 Shadow DOM，不会和页面样式打架。完整示例见仓库根目录的 `map-demo.html`（构建后访问 `/map-demo.html`）。
 
-### 🧰 地图数据编辑器
+### 🧰 地图编辑器
 
-`map-generator/` 是一个**仅本地使用**的网页工具，用来手动录入国家、一级行政区、编号和颜色，生成 `hoi4-map-data` 格式的 JSON：
+`map-generator/` 是一个**仅本地使用**的地图编辑工具：载入东亚 / 世界底图后，点选省份把它划入当前国家，颜色、国界和标签实时更新，导出的 JSON 带完整几何，可直接给网站插件使用。
 
 ```bash
 npm run dev
 # http://localhost:5173/map-generator/
 ```
 
-支持添加 / 删除国家与行政区、逐项改颜色、即时预览 JSON、下载或复制。它只生成政治数据与颜色，不包含真实边界几何；需要渲染时再与底图数据合并。详细说明见 `map-generator/README.md`。
+支持选择 / 新增国家、点击地图分配省份、修改国家名称与颜色、即时预览、下载或复制完整 `hoi4-map` JSON。详细说明见 `map-generator/README.md`。
 
 > 这个工具**不参与 `npm run build`**，不会被打包进 `dist/`，也不会部署到线上。
 

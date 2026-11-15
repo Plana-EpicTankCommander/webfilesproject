@@ -3,7 +3,7 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>地图数据编辑器 · 古明地灵殿</title>
+    <title>地图编辑器 · 古明地灵殿</title>
     <link rel="icon" href="../favicon.ico" sizes="any" />
     <link rel="stylesheet" href="./styles.css" />
   </head>
@@ -11,7 +11,7 @@
     <header class="topbar">
       <a class="brand" href="../">
         <span class="brand-mark">地</span>
-        <span>古明地灵殿 · 地图数据编辑器</span>
+        <span>古明地灵殿 · 地图编辑器</span>
       </a>
       <nav>
         <a href="../map-demo.html">地图演示</a>
@@ -21,115 +21,138 @@
 
     <main class="shell">
       <section class="hero">
-        <div class="kicker">Map Data Editor</div>
-        <h1>手动录入国家、行政区<br />和它们的颜色</h1>
+        <div class="kicker">Map Editor</div>
+        <h1>点选省份，<br />把它划进你的国家</h1>
         <p>
-          不需要准备真实边界数据。添加国家代码、名称和一级行政区，逐个设置颜色，
-          工具会生成结构化的地图数据 JSON，供后续合并边界或作为设定稿使用。
+          在真实底图上选择省份，直接分配给当前国家；颜色、国界和地图预览会同步更新。
+          导出的 JSON 带完整几何数据，可以放进 <code>sth_ineed/maps/</code> 直接给网站插件使用。
         </p>
       </section>
 
       <section class="workspace">
-        <div class="editor-column">
+        <aside class="sidebar">
           <section class="panel">
             <div class="panel-head">
-              <span>01 / 地图信息</span>
-              <span class="badge">数据文件</span>
+              <span>01 / 底图</span>
+              <span id="source-badge" class="badge">加载中</span>
+            </div>
+            <div class="source-row">
+              <select id="base-select" class="select">
+                <option value="east-asia">东亚 · 8 国 / 169 区</option>
+                <option value="world">世界 · 250 国 / 4594 区</option>
+              </select>
+              <button type="button" id="reload" class="btn btn-ghost">重载</button>
+            </div>
+            <label class="file-btn btn btn-ghost">
+              选择本地地图 JSON
+              <input type="file" id="file-input" accept=".json,application/json" hidden />
+            </label>
+            <p id="source-status" class="status" aria-live="polite">正在读取底图…</p>
+          </section>
+
+          <section class="panel active-panel">
+            <div class="panel-head">
+              <span>02 / 当前国家</span>
+              <span id="active-count" class="badge">0 区</span>
+            </div>
+            <div class="active-head">
+              <span id="active-swatch" class="active-swatch"></span>
+              <div class="active-title">
+                <code id="active-code">—</code>
+                <strong id="active-name">未选择</strong>
+              </div>
+            </div>
+            <div class="field-row">
+              <label class="field">
+                <span>中文名</span>
+                <input id="active-name-zh" type="text" maxlength="30" />
+              </label>
+              <label class="field">
+                <span>英文名</span>
+                <input id="active-name-en" type="text" maxlength="50" />
+              </label>
+            </div>
+            <label class="field field-color-row">
+              <span>国家颜色</span>
+              <input id="active-color" type="color" value="#9a7b4f" />
+            </label>
+            <p class="hint">点击右侧地图上的省份，把它加入当前国家；再次点击其他省份可连续添加。</p>
+          </section>
+
+          <section class="panel">
+            <div class="panel-head">
+              <span>03 / 国家列表</span>
+              <span id="summary" class="badge">0 国家</span>
+            </div>
+            <div class="country-tools">
+              <input id="country-search" class="search" type="search" placeholder="搜索国家代码 / 名称…" autocomplete="off" />
+              <form id="country-form" class="add-country" autocomplete="off">
+                <input id="new-code" class="code-input" type="text" maxlength="3" placeholder="代码" required />
+                <input id="new-name-zh" type="text" placeholder="中文名" required />
+                <input id="new-name-en" type="text" placeholder="English" />
+                <input id="new-color" type="color" value="#9a7b4f" />
+                <button type="submit" class="btn btn-primary">添加</button>
+              </form>
+              <p id="country-error" class="status" aria-live="polite"></p>
+            </div>
+            <div id="country-list" class="country-list"></div>
+          </section>
+
+          <section class="panel">
+            <div class="panel-head">
+              <span>04 / 导出</span>
+              <span id="output-stats" class="badge">—</span>
             </div>
             <div class="field-row">
               <label class="field">
                 <span>标题</span>
-                <input id="map-title" type="text" value="世界政治地图" maxlength="40" />
+                <input id="map-title" type="text" maxlength="40" />
               </label>
               <label class="field">
                 <span>英文副标题</span>
-                <input id="map-title-en" type="text" value="WORLD POLITICAL MAP" maxlength="60" />
+                <input id="map-title-en" type="text" maxlength="60" />
               </label>
             </div>
-            <div class="field-row">
-              <label class="field">
-                <span>文件名</span>
-                <input id="filename" type="text" value="map-data.json" maxlength="80" />
-              </label>
-              <div class="field field-actions">
-                <span>快捷操作</span>
-                <div class="inline-buttons">
-                  <button type="button" id="load-sample" class="btn btn-ghost btn-small">载入示例</button>
-                  <button type="button" id="clear-all" class="btn btn-ghost btn-small">清空全部</button>
-                </div>
-              </div>
-            </div>
-          </section>
-
-          <section class="panel">
-            <div class="panel-head">
-              <span>02 / 添加国家</span>
-              <span class="badge">3 位代码</span>
-            </div>
-            <form id="country-form" class="country-form" autocomplete="off">
-              <label class="field field-code">
-                <span>代码</span>
-                <input id="country-code" type="text" maxlength="3" placeholder="CHN" required />
-              </label>
-              <label class="field">
-                <span>中文名</span>
-                <input id="country-name-zh" type="text" placeholder="中国" required />
-              </label>
-              <label class="field">
-                <span>英文名</span>
-                <input id="country-name" type="text" placeholder="China" />
-              </label>
-              <label class="field field-color">
-                <span>颜色</span>
-                <input id="country-color" type="color" value="#9a7b4f" />
-              </label>
-              <button type="submit" class="btn btn-primary add-country">添加</button>
-            </form>
-            <p id="country-error" class="status" aria-live="polite"></p>
-          </section>
-
-          <section class="panel">
-            <div class="panel-head">
-              <span>03 / 国家与行政区</span>
-              <span id="summary" class="badge">0 国家 · 0 行政区</span>
-            </div>
-            <div id="country-list" class="country-list"></div>
-            <div id="empty-state" class="empty-state">
-              <span class="empty-mark">＋</span>
-              <p>还没有国家。先在上方添加一个国家，或点「载入示例」。</p>
-            </div>
-          </section>
-        </div>
-
-        <aside class="output-column">
-          <section class="panel output-panel">
-            <div class="panel-head">
-              <span>04 / JSON 预览</span>
-              <span id="json-stats" class="badge">等待录入</span>
-            </div>
-            <pre id="json-preview" class="json-preview"><code>// 添加国家后，这里会生成 JSON</code></pre>
+            <label class="field">
+              <span>文件名</span>
+              <input id="filename" type="text" value="edited-map.json" maxlength="80" />
+            </label>
             <div class="output-actions">
-              <button type="button" id="download" class="btn btn-primary" disabled>下载 JSON</button>
-              <button type="button" id="copy" class="btn btn-ghost" disabled>复制 JSON</button>
+              <button type="button" id="download" class="btn btn-primary">下载 JSON</button>
+              <button type="button" id="copy" class="btn btn-ghost">复制 JSON</button>
             </div>
             <p id="output-status" class="status" aria-live="polite"></p>
-
-            <details class="help">
-              <summary>这份 JSON 包含什么？</summary>
-              <p>
-                只包含国家、行政区、编号和颜色，不包含边界坐标。格式是
-                <code>hoi4-map-data</code>；如果要用现有地图插件渲染，需要再把
-                <code>countries</code> / <code>divisions</code> 与某个底图的几何数据合并。
-              </p>
-            </details>
+            <p class="note">
+              导出的文件是完整 <code>hoi4-map</code> JSON，包含边界、颜色和新的国家归属，
+              可直接上传到 <code>sth_ineed/maps/</code>。
+            </p>
           </section>
         </aside>
+
+        <section class="map-column">
+          <div class="map-head">
+            <span>05 / 地图预览与点选</span>
+            <span id="map-active" class="map-active">未选择国家</span>
+          </div>
+          <div class="map-frame">
+            <div id="map-host" class="map-host"></div>
+            <div id="map-overlay" class="map-overlay">
+              <div class="spinner"></div>
+              <p>正在加载底图…</p>
+            </div>
+            <div id="toast" class="toast" aria-live="polite"></div>
+          </div>
+          <div class="map-foot">
+            <span>滚轮缩放 · 拖动平移 · 点击省份加入当前国家</span>
+            <span id="map-hint">省份边界已高亮显示</span>
+          </div>
+        </section>
       </section>
     </main>
 
     <footer class="footer">
-      <span>纯本地工具，不会上传或保存任何输入。</span>
-      <span>修改会即时反映在右侧 JSON 预览中。</span>
+      <span>底图来自 Natural Earth 1:10m Admin-1；所有编辑只在本地浏览器进行。</span>
+      <span>本工具不参与线上构建，仅供本地使用。</span>
     </footer>
 
     <script type="module" src="./app.js"></script>
