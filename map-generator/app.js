@@ -18,7 +18,7 @@ const EAST_ASIA = ['CHN', 'HKG', 'JPN', 'KOR', 'MAC', 'MNG', 'PRK', 'TWN']
 const $ = (selector) => document.querySelector(selector)
 
 const state = {
-  baseId: 'east-asia',
+  baseId: 'world',
   data: null,
   geom: null,
   map: null,
@@ -668,4 +668,4 @@ function bindEvents() {
 }
 
 bindEvents()
-loadBase('east-asia')
+loadBase('world')
