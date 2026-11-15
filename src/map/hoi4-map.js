@@ -7,7 +7,7 @@
  */
 import { MAP_CSS } from './map-styles.js'
 
-export const DEFAULT_MAP_SRC = './map/world-map.json'
+export const DEFAULT_MAP_SRC = 'https://raw.githubusercontent.com/Plana-EpicTankCommander/sth_ineed/main/maps/world-map.json'
 const MAX_ZOOM = 32
 const MIN_ZOOM = 1
 const GRID_COLUMNS = 56

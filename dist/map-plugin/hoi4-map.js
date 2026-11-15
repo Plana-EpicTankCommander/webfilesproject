@@ -526,9 +526,9 @@ const E = `
 @media (prefers-reduced-motion: reduce) {
   .hm-hint, .hm-tooltip, .hm-loading, .hm-card, .hm-spinner { transition: none !important; animation: none !important; }
 }
-`, P = "./map/world-map.json";
+`, T = "https://raw.githubusercontent.com/Plana-EpicTankCommander/sth_ineed/main/maps/world-map.json";
 const k = {
-  src: P,
+  src: T,
   height: "520px",
   width: "100%",
   fit: "contain",
@@ -545,7 +545,7 @@ const k = {
 function O(h = {}) {
   return { ...k, ...h };
 }
-function H(h) {
+function L(h) {
   if (typeof h == "number" && Number.isFinite(h)) return `${Math.max(220, h)}px`;
   if (typeof h == "string" && h.trim()) {
     const t = h.trim();
@@ -553,7 +553,7 @@ function H(h) {
   }
   return k.height;
 }
-function L(h) {
+function P(h) {
   if (typeof h == "number" && Number.isFinite(h)) return h;
   if (typeof h == "string") {
     const t = h.trim().match(/^(\d+(?:\.\d+)?)(px)?$/);
@@ -622,7 +622,7 @@ async function q(h, t) {
 class N {
   constructor(t, e = {}) {
     if (!t) throw new Error("Hoi4Map 需要一个容器元素");
-    this.host = t, this.options = O(e), this.src = this.options.src || P, this.explicitHeightPx = L(this.options.height), this.destroyed = !1, this.ready = !1, this.data = null, this.pendingReveal = !1, this.viewW = 1, this.viewH = 1, this.dpr = 1, this.fitScale = 1, this.scale = 1, this.tx = 0, this.ty = 0, this.snapMargin = 0, this.pointers = /* @__PURE__ */ new Map(), this.drag = null, this.pinch = null, this.dragging = !1, this.hoverDivision = null, this.hoverCountry = null, this.selectedCountry = null, this.fastRaf = 0, this.qualityRaf = 0, this.settleTimer = 0, this.hintTimer = 0, this.arcs = [], this.fillGroups = /* @__PURE__ */ new Map(), this.countryPathCache = /* @__PURE__ */ new Map(), this.grid = null, this.labelCountries = [], this.bound = {
+    this.host = t, this.options = O(e), this.src = this.options.src || T, this.explicitHeightPx = P(this.options.height), this.destroyed = !1, this.ready = !1, this.data = null, this.pendingReveal = !1, this.viewW = 1, this.viewH = 1, this.dpr = 1, this.fitScale = 1, this.scale = 1, this.tx = 0, this.ty = 0, this.snapMargin = 0, this.pointers = /* @__PURE__ */ new Map(), this.drag = null, this.pinch = null, this.dragging = !1, this.hoverDivision = null, this.hoverCountry = null, this.selectedCountry = null, this.fastRaf = 0, this.qualityRaf = 0, this.settleTimer = 0, this.hintTimer = 0, this.arcs = [], this.fillGroups = /* @__PURE__ */ new Map(), this.countryPathCache = /* @__PURE__ */ new Map(), this.grid = null, this.labelCountries = [], this.bound = {
       pointerDown: (i) => this.onPointerDown(i),
       pointerMove: (i) => this.onPointerMove(i),
       pointerUp: (i) => this.onPointerUp(i),
@@ -716,7 +716,7 @@ class N {
 
         <div class="hm-live" aria-live="polite"></div>
       </div>
-    `, this.frame = this.root.querySelector(".hm-frame"), this.canvas = this.root.querySelector(".hm-canvas"), this.ctx = this.canvas.getContext("2d"), this.plate = this.root.querySelector(".hm-plate"), this.plateKicker = this.root.querySelector(".hm-plate-kicker"), this.titleEl = this.root.querySelector(".hm-title"), this.subtitleEl = this.root.querySelector(".hm-subtitle"), this.zoomLabel = this.root.querySelector(".hm-zoom"), this.toolbar = this.root.querySelector(".hm-toolbar"), this.hintEl = this.root.querySelector(".hm-hint"), this.legend = this.root.querySelector(".hm-legend"), this.legendCountries = this.root.querySelector(".hm-legend-countries"), this.legendDivisions = this.root.querySelector(".hm-legend-divisions"), this.tooltip = this.root.querySelector(".hm-tooltip"), this.tooltipCountry = this.root.querySelector(".hm-tt-country"), this.tooltipName = this.root.querySelector(".hm-tt-name"), this.tooltipSub = this.root.querySelector(".hm-tt-sub"), this.card = this.root.querySelector(".hm-card"), this.cardSwatch = this.root.querySelector(".hm-swatch"), this.cardName = this.root.querySelector(".hm-card-name"), this.cardEn = this.root.querySelector(".hm-card-en"), this.cardCode = this.root.querySelector(".hm-card-code"), this.cardCount = this.root.querySelector(".hm-card-count"), this.loading = this.root.querySelector(".hm-loading"), this.progressBar = this.root.querySelector(".hm-progress i"), this.loadingPercent = this.root.querySelector(".hm-loading small"), this.errorBox = this.root.querySelector(".hm-error"), this.errorText = this.root.querySelector(".hm-error-text"), this.live = this.root.querySelector(".hm-live"), this.frame.style.setProperty("--hm-height", H(this.options.height)), this.plateKicker.textContent = this.options.kicker || k.kicker, this.titleEl.textContent = this.options.title || "世界政治地图", this.subtitleEl.textContent = this.options.subtitle || "WORLD POLITICAL MAP", this.plate.hidden = !this.options.showTitle || this.options.title === "none", this.root.querySelector(".hm-compass").hidden = !this.options.showCompass, this.legend.hidden = !this.options.showLegend, document.fullscreenEnabled || (this.root.querySelector(".hm-full").hidden = !0), this.options.interactive || (this.toolbar.hidden = !0, this.hintEl.hidden = !0), this.hintTimer = window.setTimeout(() => this.dismissHint(), 6e3);
+    `, this.frame = this.root.querySelector(".hm-frame"), this.canvas = this.root.querySelector(".hm-canvas"), this.ctx = this.canvas.getContext("2d"), this.plate = this.root.querySelector(".hm-plate"), this.plateKicker = this.root.querySelector(".hm-plate-kicker"), this.titleEl = this.root.querySelector(".hm-title"), this.subtitleEl = this.root.querySelector(".hm-subtitle"), this.zoomLabel = this.root.querySelector(".hm-zoom"), this.toolbar = this.root.querySelector(".hm-toolbar"), this.hintEl = this.root.querySelector(".hm-hint"), this.legend = this.root.querySelector(".hm-legend"), this.legendCountries = this.root.querySelector(".hm-legend-countries"), this.legendDivisions = this.root.querySelector(".hm-legend-divisions"), this.tooltip = this.root.querySelector(".hm-tooltip"), this.tooltipCountry = this.root.querySelector(".hm-tt-country"), this.tooltipName = this.root.querySelector(".hm-tt-name"), this.tooltipSub = this.root.querySelector(".hm-tt-sub"), this.card = this.root.querySelector(".hm-card"), this.cardSwatch = this.root.querySelector(".hm-swatch"), this.cardName = this.root.querySelector(".hm-card-name"), this.cardEn = this.root.querySelector(".hm-card-en"), this.cardCode = this.root.querySelector(".hm-card-code"), this.cardCount = this.root.querySelector(".hm-card-count"), this.loading = this.root.querySelector(".hm-loading"), this.progressBar = this.root.querySelector(".hm-progress i"), this.loadingPercent = this.root.querySelector(".hm-loading small"), this.errorBox = this.root.querySelector(".hm-error"), this.errorText = this.root.querySelector(".hm-error-text"), this.live = this.root.querySelector(".hm-live"), this.frame.style.setProperty("--hm-height", L(this.options.height)), this.plateKicker.textContent = this.options.kicker || k.kicker, this.titleEl.textContent = this.options.title || "世界政治地图", this.subtitleEl.textContent = this.options.subtitle || "WORLD POLITICAL MAP", this.plate.hidden = !this.options.showTitle || this.options.title === "none", this.root.querySelector(".hm-compass").hidden = !this.options.showCompass, this.legend.hidden = !this.options.showLegend, document.fullscreenEnabled || (this.root.querySelector(".hm-full").hidden = !0), this.options.interactive || (this.toolbar.hidden = !0, this.hintEl.hidden = !0), this.hintTimer = window.setTimeout(() => this.dismissHint(), 6e3);
   }
   bindEvents() {
     const t = this.canvas;
@@ -880,7 +880,7 @@ class N {
       this.renderEmpty();
   }
   setHeight(t) {
-    this.options.height = t, this.explicitHeightPx = L(t), this.frame.style.setProperty("--hm-height", H(t)), this.resize();
+    this.options.height = t, this.explicitHeightPx = P(t), this.frame.style.setProperty("--hm-height", L(t)), this.resize();
   }
   computeFitScale() {
     if (!this.data) return 1;
@@ -1124,9 +1124,9 @@ class N {
     t.setTransform(this.dpr, 0, 0, this.dpr, 0, 0), t.textAlign = "center", t.textBaseline = "middle", t.lineJoin = "round";
     for (const d of this.labelCountries) {
       if (r >= o) break;
-      const c = d.bbox, m = c[0] * this.scale + this.tx, g = c[1] * this.scale + this.ty, b = c[2] * this.scale + this.tx, T = c[3] * this.scale + this.ty;
-      if (b < -30 || m > this.viewW + 30 || T < -20 || g > this.viewH + 20) continue;
-      const v = b - m, W = T - g;
+      const c = d.bbox, m = c[0] * this.scale + this.tx, g = c[1] * this.scale + this.ty, b = c[2] * this.scale + this.tx, H = c[3] * this.scale + this.ty;
+      if (b < -30 || m > this.viewW + 30 || H < -20 || g > this.viewH + 20) continue;
+      const v = b - m, W = H - g;
       if (v < 26 || W < 11) continue;
       const y = d.label[0] * this.scale + this.tx, x = d.label[1] * this.scale + this.ty;
       if (y < 16 || y > this.viewW - 16 || x < 16 || x > this.viewH - 16) continue;
@@ -1385,7 +1385,7 @@ class _ extends HTMLElement {
   connectedCallback() {
     if (this._map) return;
     this.style.display = this.style.display || "block";
-    const t = this.getAttribute("src") || new URL("map/world-map.json", document.baseURI).href, e = Number(this.getAttribute("zoom"));
+    const t = this.getAttribute("src") || T, e = Number(this.getAttribute("zoom"));
     this._map = new N(this, {
       src: t,
       height: this.getAttribute("height") || "520px",

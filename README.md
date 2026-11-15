@@ -130,7 +130,7 @@
 ></hoi4-map>
 ```
 
-可用属性：`src`、`height`、`width`、`title`、`subtitle`、`focus`、`zoom`、`fit`、`show-title`、`show-compass`。地图内部是 Shadow DOM，不会和页面样式打架。完整示例见仓库根目录的 `map-demo.html`（构建后访问 `/map-demo.html`）。
+可用属性：`src`、`height`、`width`、`title`、`subtitle`、`focus`、`zoom`、`fit`、`show-title`、`show-compass`；不写 `src` 时默认读取 `sth_ineed/maps/world-map.json`。地图内部是 Shadow DOM，不会和页面样式打架。完整示例见仓库根目录的 `map-demo.html`（构建后访问 `/map-demo.html`）。
 
 ### 📄 插入 PDF
 

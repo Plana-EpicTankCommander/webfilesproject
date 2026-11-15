@@ -5,7 +5,7 @@
  *   <script type="module" src="./map-plugin/hoi4-map.js"></script>
  *   <hoi4-map src="./map/world-map.json" height="560" focus="CHN"></hoi4-map>
  */
-import { Hoi4Map } from './hoi4-map.js'
+import { Hoi4Map, DEFAULT_MAP_SRC } from './hoi4-map.js'
 
 function boolAttr(value, fallback = true) {
   if (value == null) return fallback
@@ -26,7 +26,7 @@ export class Hoi4MapElement extends HTMLElement {
   connectedCallback() {
     if (this._map) return
     this.style.display = this.style.display || 'block'
-    const src = this.getAttribute('src') || new URL('map/world-map.json', document.baseURI).href
+    const src = this.getAttribute('src') || DEFAULT_MAP_SRC
     const zoom = Number(this.getAttribute('zoom'))
     this._map = new Hoi4Map(this, {
       src,
