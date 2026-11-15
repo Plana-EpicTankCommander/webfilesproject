@@ -3,7 +3,7 @@
  * Build the single-file map dataset used by the HOI4-style map plugin.
  *
  * Input : Natural Earth 1:10m Admin-1 States/Provinces (GeoJSON)
- * Output: public/map/world-map.json
+ * Output: .map-cache/world-map.json (copy to sth_ineed/maps/world-map.json)
  *
  * The output is a compact, projected, quantized topology:
  *   - `arcs` are shared boundaries, delta encoded
@@ -24,7 +24,7 @@ const CACHE = path.join(ROOT, '.map-cache')
 const SOURCE = path.join(CACHE, 'ne_10m_admin_1_states_provinces.geojson')
 const COUNTRIES = path.join(CACHE, 'ne_10m_admin_0_countries.geojson')
 const SIMPLIFIED = path.join(CACHE, 'admin1.simplified.topojson')
-const OUT = path.join(ROOT, 'public', 'map', 'world-map.json')
+const OUT = path.resolve(process.env.MAP_OUT || path.join(CACHE, 'world-map.json'))
 
 const SIMPLIFY = process.env.MAP_SIMPLIFY || '40%'
 const WORLD_WIDTH = 100000
@@ -626,6 +626,7 @@ function build() {
   fs.writeFileSync(OUT, json)
   const mb = (Buffer.byteLength(json) / 1024 / 1024).toFixed(2)
   log(`写入 ${path.relative(ROOT, OUT)}（${mb} MB）`)
+  log('发布到内容仓库：复制到 sth_ineed/maps/world-map.json 后提交')
   log(`coast ${coast.length} / border ${borders.length} / internal ${internal.length} / graticule ${graticule.length}`)
   log('完成')
 }

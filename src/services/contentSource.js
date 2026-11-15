@@ -27,6 +27,12 @@ const REPO_CONFIG = {
     repo: 'sth_ineed',
     branch: 'main',
     baseDir: 'musics'
+  },
+  maps: {
+    owner: 'Plana-EpicTankCommander',
+    repo: 'sth_ineed',
+    branch: 'main',
+    baseDir: 'maps'
   }
 }
 
@@ -304,11 +310,11 @@ export async function resolveMapMarkers(html) {
   const matches = [...html.matchAll(MAP_MARKER_RE)]
   if (matches.length === 0) return html
 
-  // 地图 JSON 随站点一起发布；使用 BASE_URL 以兼容 GitHub Pages 的子路径。
-  const mapSrc = `${import.meta.env.BASE_URL}map/world-map.json`
+  // 地图 JSON 放在内容仓库 sth_ineed/maps/ 下，和文章一起维护。
   let result = html
   for (const match of matches) {
     const marker = parseMapMarker(match[1])
+    const mapSrc = getMapUrl(marker.mapId)
     const host = `<div class="map-embed-host"`
       + ` style="width:${marker.width}%;margin:1.7rem auto;"`
       + ` data-map-id="${escapeHtmlAttribute(marker.mapId)}"`
@@ -529,6 +535,13 @@ export function getMusicUrl(section, path) {
   const config = REPO_CONFIG[section]
   const baseDir = config.baseDir ? config.baseDir + '/' : ''
   return `${GITHUB_RAW}/${config.owner}/${config.repo}/${config.branch}/${baseDir}${path}`
+}
+
+// 地图数据和文章放在同一个内容仓库：sth_ineed/maps/<id>-map.json
+export function getMapUrl(mapId = 'world') {
+  const config = REPO_CONFIG.maps
+  const safeId = /^[a-z0-9-]+$/i.test(mapId) ? mapId : 'world'
+  return `${GITHUB_RAW}/${config.owner}/${config.repo}/${config.branch}/${config.baseDir}/${safeId}-map.json`
 }
 
 export function getPdfRawUrl(path) {

@@ -5,6 +5,7 @@
 <script setup>
 import { computed, onBeforeUnmount, onMounted, ref, watch } from 'vue'
 import { Hoi4Map } from '../../map/hoi4-map.js'
+import { getMapUrl } from '../../services/contentSource'
 
 const props = defineProps({
   src: { type: String, default: '' },
@@ -22,7 +23,7 @@ const props = defineProps({
 const host = ref(null)
 let map = null
 
-const defaultSrc = `${import.meta.env.BASE_URL}map/world-map.json`
+const defaultSrc = getMapUrl('world')
 
 const hostStyle = computed(() => ({
   width: typeof props.width === 'number' ? `${props.width}%` : props.width

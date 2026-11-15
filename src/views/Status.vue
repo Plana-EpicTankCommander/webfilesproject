@@ -169,7 +169,7 @@
               <tr><td><code>title</code></td><td>标题牌文字；<code>none</code> 隐藏</td><td>数据标题</td></tr>
             </tbody>
           </table>
-          <p>地图只描国界和海岸线，不画一级行政区边界；每个行政区的颜色来自 <code>public/map/world-map.json</code>。独立网页可使用 <code>&lt;hoi4-map&gt;</code> 组件，详见仓库 README。</p>
+          <p>地图只描国界和海岸线，不画一级行政区边界；每个行政区的颜色来自内容仓库的 <code>sth_ineed/maps/world-map.json</code>。独立网页可使用 <code>&lt;hoi4-map&gt;</code> 组件，详见仓库 README。</p>
         </div>
       </details>
 

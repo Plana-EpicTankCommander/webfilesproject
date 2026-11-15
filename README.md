@@ -102,7 +102,7 @@
 
 | 参数 | 含义 | 默认 |
 |------|------|------|
-| `world` | 地图数据 id；当前内置数据集只有 `world` | `world` |
+| `world` | 地图数据 id；对应 `sth_ineed/maps/world-map.json` | `world` |
 | `h` | 地图高度（px，240~1200） | `540` |
 | `w` | 地图宽度百分比（20~100） | `100` |
 | `focus` | 初始聚焦：三位国家代码（如 `CHN`）或行政区编号（如 `CHN011`） | 无 |
@@ -114,18 +114,15 @@
 
 地图外观是低饱和政治色 + 暗色海面 + 细金线 + 纸纹；行政区的颜色会形成轻微色块，但**渲染时不描一级行政区边界**，只描海岸线与国界。缩放时线宽保持屏幕像素级，不会跟着地图一起变粗。
 
-**在其他网页里使用**：执行 `npm run build` 后，把以下两个文件放到任意静态站点即可：
+地图数据不在本站的构建产物里，而是和文章一起放在内容仓库 `sth_ineed/maps/world-map.json`，由前端通过 `raw.githubusercontent.com` 读取。
 
-```
-dist/map-plugin/hoi4-map.js
-dist/map/world-map.json
-```
+**在其他网页里使用**：执行 `npm run build` 后，把 `dist/map-plugin/hoi4-map.js` 放到静态站点即可；地图 JSON 直接使用内容仓库的 raw 地址（也可以下载后自建副本）：
 
 ```html
 <script type="module" src="./map-plugin/hoi4-map.js"></script>
 
 <hoi4-map
-  src="./map/world-map.json"
+  src="https://raw.githubusercontent.com/Plana-EpicTankCommander/sth_ineed/main/maps/world-map.json"
   height="560"
   title="世界政治地图"
   focus="CHN"
@@ -174,7 +171,6 @@ dist/map/world-map.json
 ```
 .
 ├── public/                  图标、头像、原图（构建时原样拷贝）
-│   └── map/world-map.json   地图基础数据（单文件，随页面发布）
 ├── src/
 │   ├── components/
 │   │   ├── article/         ChapterTree.vue  FloatingToc.vue
@@ -198,9 +194,11 @@ dist/map/world-map.json
 └── dist/                    构建产物（提交到仓库，供部署）
 ```
 
+> 地图基础数据不在本仓库的 `public/` 下，而是和文章一起放在内容仓库 `sth_ineed/maps/world-map.json`。
+
 ## 地图数据格式
 
-`public/map/world-map.json` 是地图的唯一基础素材。顶层字段：
+`sth_ineed/maps/world-map.json` 是地图的唯一基础素材。顶层字段：
 
 | 字段 | 含义 |
 |------|------|
@@ -225,7 +223,10 @@ dist/map/world-map.json
 
 ```bash
 # 首次需要下载 Natural Earth 1:10m 数据到 .map-cache/（见脚本顶部 URL）
-npm run build:map-data   # 重新生成 public/map/world-map.json
+npm run build:map-data   # 生成 .map-cache/world-map.json
+
+# 然后复制到内容仓库并提交：
+#   sth_ineed/maps/world-map.json
 ```
 
 ## 开发与部署
@@ -239,7 +240,7 @@ npm run preview # 本地预览构建产物
 
 部署链路：推送到 `main` 后，`.github/workflows/deploy-aweb.yml` 会把 `dist/` 同步到 `Plana-EpicTankCommander/aweb` 仓库，由 GitHub Pages 对外提供。
 
-> 因为部署直接取 `dist/`，**改完源码一定要 `npm run build` 并把 `dist/` 一起提交**，否则线上还是旧版本。地图数据 `dist/map/world-map.json`（约 2.9 MB）与独立插件 `dist/map-plugin/hoi4-map.js` 也由构建生成，需一并提交。
+> 因为部署直接取 `dist/`，**改完源码一定要 `npm run build` 并把 `dist/` 一起提交**，否则线上还是旧版本。独立插件 `dist/map-plugin/hoi4-map.js` 也由构建生成，需一并提交。
 
 ## 数据来源
 
@@ -248,14 +249,14 @@ npm run preview # 本地预览构建产物
 | 文章 / PDF | `Plana-EpicTankCommander/sth_ineed` | `novels/` |
 | 图片 | `Plana-EpicTankCommander/sth_ineed` | `images/` |
 | 音乐 | `Plana-EpicTankCommander/sth_ineed` | `musics/` |
-| 地图底图 | Natural Earth 1:10m Admin-1 States, Provinces（公有领域） | `scripts/build-map-data.mjs` 生成 `public/map/world-map.json` |
+| 地图数据 | `Plana-EpicTankCommander/sth_ineed` | `maps/world-map.json`（由 `scripts/build-map-data.mjs` 生成后上传） |
 
 > 内容清单：`sth_ineed` 仓库里的 GitHub Action 会在 `novels/`、`images/`、`musics/` 变更时生成根目录的 `manifest.json`。前端优先读取这份静态清单（不消耗 API 额度），读不到时自动回退到 GitHub API。
 
 ## 注意事项
 
 - GitHub API 未认证上限 60 次/小时，按 IP 计算；已加 2 分钟列表缓存。触发限流时页面会显示提示和「重试」按钮
-- 图片、音乐、PDF 都走 `raw.githubusercontent.com`，不消耗 API 额度
+- 图片、音乐、PDF、地图都走 `raw.githubusercontent.com`，不消耗 API 额度
 - 播放器默认音量 10%，音量与循环模式记在 localStorage
 - 文章内的图片/音乐/画布/地图标记只在 `novels/` 下的 Markdown 中生效，路径大小写敏感
 - 图标文件名被浏览器缓存得比较死，换图标后线上可能需要强刷（Ctrl+F5）才更新
