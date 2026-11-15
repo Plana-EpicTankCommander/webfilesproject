@@ -15,11 +15,15 @@ const BASES = {
 
 const EAST_ASIA = ['CHN', 'HKG', 'JPN', 'KOR', 'MAC', 'MNG', 'PRK', 'TWN']
 
+const EYE_SVG = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M2.6 12S6.2 5.8 12 5.8 21.4 12 21.4 12 17.8 18.2 12 18.2 2.6 12 2.6 12Z"/><path d="M9 12a3 3 0 1 0 6 0 3 3 0 1 0-6 0"/></svg>`
+const EYE_OFF_SVG = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M2.6 12S6.2 5.8 12 5.8 21.4 12 21.4 12 17.8 18.2 12 18.2 2.6 12 2.6 12Z"/><path d="M9 12a3 3 0 1 0 6 0 3 3 0 1 0-6 0"/><path d="M4 4l16 16"/></svg>`
+
 const $ = (selector) => document.querySelector(selector)
 
 const state = {
   baseId: 'world',
   data: null,
+  renderData: null,
   geom: null,
   map: null,
   activeCode: '',
@@ -35,6 +39,7 @@ const activeCount = $('#active-count')
 const activeNameZhInput = $('#active-name-zh')
 const activeNameEnInput = $('#active-name-en')
 const activeColorInput = $('#active-color')
+const activeVisibleInput = $('#active-visible')
 const countryList = $('#country-list')
 const countrySearch = $('#country-search')
 const summary = $('#summary')
@@ -202,8 +207,20 @@ function buildGeometry(data) {
   return { arcs, byDivision }
 }
 
-function recomputeAll() {
+function refreshFullDivisionLists() {
   const data = state.data
+  const countryByCode = new Map(data.countries.map((country) => [country.code, country]))
+  for (const country of data.countries) country.divisions = []
+  for (const division of data.divisions) {
+    if (!countryByCode.has(division.country)) division.country = data.countries[0]?.code || ''
+    countryByCode.get(division.country)?.divisions.push(division.id)
+  }
+}
+
+// Rebuild geometry-dependent metadata for the data that will actually be drawn.
+// Hidden countries are filtered out before this runs, so their territory becomes
+// ocean and their borders become coastlines of the remaining countries.
+function recomputeGeometry(data) {
   const { byDivision } = state.geom
   const countryByCode = new Map(data.countries.map((country) => [country.code, country]))
 
@@ -238,7 +255,6 @@ function recomputeAll() {
     const countries = arcCountries[i]
     const divisions = arcDivisions[i]
     if (!countries) continue
-
     if (countries.size >= 2) {
       borders.push(i)
       for (const code of countries) countryArcs.get(code)?.add(i)
@@ -287,6 +303,34 @@ function recomputeAll() {
   data.meta.generated = new Date().toISOString().slice(0, 10)
 }
 
+function buildRenderData() {
+  const visibleCountries = state.data.countries.filter((country) => !country.hidden)
+  const visibleCodes = new Set(visibleCountries.map((country) => country.code))
+  const visibleDivisions = state.data.divisions.filter((division) => visibleCodes.has(division.country))
+
+  const render = {
+    ...state.data,
+    countries: visibleCountries,
+    divisions: visibleDivisions,
+    meta: {
+      ...state.data.meta,
+      countries: visibleCountries.length,
+      divisions: visibleDivisions.length,
+      arcs: state.data.arcs.length
+    }
+  }
+  recomputeGeometry(render)
+  state.renderData = render
+  return render
+}
+
+function rebuildMap() {
+  refreshFullDivisionLists()
+  const render = buildRenderData()
+  state.map?.setData(render)
+  renderAll()
+}
+
 function findCountry(code) {
   return state.data?.countries.find((country) => country.code === code)
 }
@@ -318,6 +362,9 @@ function renderActive() {
     activeSwatch.style.background = '#5a5042'
     activeNameZhInput.value = ''
     activeNameEnInput.value = ''
+    activeVisibleInput.checked = false
+    activeVisibleInput.disabled = true
+    mapActive.textContent = '未选择国家'
     return
   }
 
@@ -328,7 +375,11 @@ function renderActive() {
   activeNameZhInput.value = country.nameZh
   activeNameEnInput.value = country.name
   activeColorInput.value = country.color
-  mapActive.textContent = `当前：${country.nameZh || country.name}`
+  activeVisibleInput.checked = !country.hidden
+  activeVisibleInput.disabled = false
+  mapActive.textContent = country.hidden
+    ? `当前：${country.nameZh || country.name}（已隐藏）`
+    : `当前：${country.nameZh || country.name}`
 }
 
 function renderCountryList() {
@@ -349,11 +400,17 @@ function renderCountryList() {
     if (query && !searchText.includes(query)) continue
     visible++
 
-    const row = document.createElement('button')
-    row.type = 'button'
+    const row = document.createElement('div')
     row.className = 'country-row'
     row.dataset.code = country.code
     row.classList.toggle('is-active', country.code === state.activeCode)
+    row.classList.toggle('is-hidden-country', Boolean(country.hidden))
+
+    const main = document.createElement('button')
+    main.type = 'button'
+    main.className = 'row-main'
+    main.dataset.action = 'select'
+    main.dataset.code = country.code
 
     const swatch = document.createElement('span')
     swatch.className = 'row-swatch'
@@ -371,7 +428,19 @@ function renderCountryList() {
     count.className = 'row-count'
     count.textContent = `${country.divisions.length} 区`
 
-    row.append(swatch, code, name, count)
+    main.append(swatch, code, name, count)
+
+    const eye = document.createElement('button')
+    eye.type = 'button'
+    eye.className = 'row-eye'
+    eye.dataset.action = 'toggle'
+    eye.dataset.code = country.code
+    eye.setAttribute('aria-pressed', String(!country.hidden))
+    eye.title = country.hidden ? '显示在地图上' : '从地图上隐藏'
+    eye.setAttribute('aria-label', country.hidden ? `显示 ${country.nameZh}` : `隐藏 ${country.nameZh}`)
+    eye.innerHTML = country.hidden ? EYE_OFF_SVG : EYE_SVG
+
+    row.append(main, eye)
     fragment.append(row)
   }
 
@@ -383,15 +452,16 @@ function renderCountryList() {
   } else {
     countryList.append(fragment)
   }
-  summary.textContent = `${state.data.countries.length} 国家`
 }
 
 function updateStats() {
-  if (!state.data) return
-  const { countries, divisions, arcs } = state.data.meta
-  outputStats.textContent = `${countries} 国家 · ${divisions} 行政区`
+  if (!state.data || !state.renderData) return
+  const { countries, divisions, arcs } = state.renderData.meta
+  const hidden = state.data.countries.filter((country) => country.hidden).length
+  outputStats.textContent = `${countries} 国家 · ${divisions} 行政区` + (hidden ? ` · ${hidden} 隐藏` : '')
   outputStats.title = `${arcs} 条边界弧段`
-  setStatus(outputStatus, `完整地图数据 · ${countries} 国家 / ${divisions} 行政区 / ${arcs} 弧段。`, 'ok')
+  summary.textContent = `${state.data.countries.length} 国家` + (hidden ? ` · ${hidden} 隐藏` : '')
+  setStatus(outputStatus, `完整地图数据 · 显示 ${countries} 国家 / ${divisions} 行政区 / ${arcs} 弧段。`, 'ok')
 }
 
 function renderAll() {
@@ -416,7 +486,7 @@ function createMap() {
   mapHost.innerHTML = ''
 
   state.map = new Hoi4Map(mapHost, {
-    data: state.data,
+    data: state.renderData,
     height: '680px',
     title: state.data.meta.title || '',
     subtitle: state.data.meta.titleEn || '',
@@ -443,6 +513,7 @@ function assignDivision(id) {
     return
   }
 
+  if (country.hidden) country.hidden = false
   const oldCountry = findCountry(division.country)
   const oldId = division.id
   if (oldCountry) {
@@ -454,12 +525,7 @@ function assignDivision(id) {
   division.country = country.code
   division.color = shadeColor(country.color, hashString(newId))
 
-  recomputeAll()
-  state.map?.setData(state.data)
-  renderActive()
-  renderCountryList()
-  updateStats()
-  syncMapTitle()
+  rebuildMap()
   showToast(`已将 ${division.nameZh} 划入 ${country.nameZh}。`)
 }
 
@@ -468,10 +534,7 @@ function updateActiveName() {
   if (!country) return
   country.nameZh = activeNameZhInput.value.trim() || country.name
   country.name = activeNameEnInput.value.trim() || country.nameZh
-  activeNameEl.textContent = country.nameZh
-  renderCountryList()
-  state.map?.setData(state.data)
-  syncMapTitle()
+  rebuildMap()
 }
 
 function updateActiveColor() {
@@ -483,8 +546,15 @@ function updateActiveColor() {
     const division = findDivision(id)
     if (division) division.color = shadeColor(country.color, hashString(id))
   }
-  renderCountryList()
-  state.map?.setData(state.data)
+  rebuildMap()
+}
+
+function setCountryVisibility(code, visible) {
+  const country = findCountry(code)
+  if (!country) return
+  country.hidden = !visible
+  rebuildMap()
+  showToast(visible ? `${country.nameZh} 已显示在地图上。` : `${country.nameZh} 已从地图上隐藏。`)
 }
 
 function addCountry(event) {
@@ -516,7 +586,8 @@ function addCountry(event) {
     bbox: [0, 0, 0, 0],
     area: 0,
     arcs: [],
-    divisions: []
+    divisions: [],
+    hidden: false
   })
   state.activeCode = code
   setStatus(countryError, `已添加 ${code} ${nameZh}，点击地图省份开始划入。`, 'ok')
@@ -524,9 +595,7 @@ function addCountry(event) {
   $('#new-name-zh').value = ''
   $('#new-name-en').value = ''
   $('#new-color').value = '#9a7b4f'
-  recomputeAll()
-  renderAll()
-  state.map?.setData(state.data)
+  rebuildMap()
 }
 
 function loadBase(id) {
@@ -558,7 +627,8 @@ function applyData(data, base) {
 
   state.data = data
   state.geom = buildGeometry(data)
-  recomputeAll()
+  refreshFullDivisionLists()
+  buildRenderData()
 
   const available = new Set(data.countries.map((country) => country.code))
   state.activeCode = available.has('CHN')
@@ -577,17 +647,22 @@ function applyData(data, base) {
 }
 
 function cleanJson(data) {
-  return JSON.stringify(data, (key, value) => (key.startsWith('_') ? undefined : value), 2) + '\n'
+  return JSON.stringify(
+    data,
+    (key, value) => (key.startsWith('_') || key === 'hidden' ? undefined : value),
+    2
+  ) + '\n'
 }
 
 function prepareExport() {
-  state.data.meta.title = $('#map-title').value.trim() || '地图'
-  state.data.meta.titleEn = $('#map-title-en').value.trim() || 'MAP'
-  state.data.meta.countries = state.data.countries.length
-  state.data.meta.divisions = state.data.divisions.length
-  state.data.meta.arcs = state.data.arcs.length
-  state.data.meta.generated = new Date().toISOString().slice(0, 10)
-  return cleanJson(state.data)
+  const data = state.renderData || state.data
+  data.meta.title = $('#map-title').value.trim() || '地图'
+  data.meta.titleEn = $('#map-title-en').value.trim() || 'MAP'
+  data.meta.countries = data.countries.length
+  data.meta.divisions = data.divisions.length
+  data.meta.arcs = data.arcs.length
+  data.meta.generated = new Date().toISOString().slice(0, 10)
+  return cleanJson(data)
 }
 
 function downloadJson() {
@@ -635,9 +710,16 @@ function bindEvents() {
   })
 
   countryList.addEventListener('click', (event) => {
-    const row = event.target.closest('.country-row')
-    if (!row) return
-    state.activeCode = row.dataset.code
+    const toggle = event.target.closest('[data-action="toggle"]')
+    if (toggle) {
+      const wasVisible = toggle.getAttribute('aria-pressed') === 'true'
+      setCountryVisibility(toggle.dataset.code, !wasVisible)
+      return
+    }
+
+    const main = event.target.closest('[data-action="select"]')
+    if (!main) return
+    state.activeCode = main.dataset.code
     renderActive()
     renderCountryList()
   })
@@ -651,6 +733,10 @@ function bindEvents() {
   activeNameZhInput.addEventListener('change', updateActiveName)
   activeNameEnInput.addEventListener('change', updateActiveName)
   activeColorInput.addEventListener('change', updateActiveColor)
+  activeVisibleInput.addEventListener('change', () => {
+    if (!state.activeCode) return
+    setCountryVisibility(state.activeCode, activeVisibleInput.checked)
+  })
 
   $('#map-title').addEventListener('input', () => {
     if (!state.data) return

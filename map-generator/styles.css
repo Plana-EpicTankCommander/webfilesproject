@@ -109,6 +109,14 @@ code { padding: 1px 5px; border-radius: 2px; background: rgba(201, 168, 106, 0.1
 .field input[type="color"] { padding: 3px; cursor: pointer; }
 .field-color-row { max-width: 92px; }
 .hint { margin: 10px 0 0; padding: 8px 9px; border-left: 2px solid rgba(201, 168, 106, 0.4); background: rgba(201, 168, 106, 0.045); color: var(--muted); font-size: 10.5px; line-height: 1.7; }
+.visibility-row { display: flex; align-items: center; gap: 8px; margin-top: 10px; color: var(--muted); font-size: 11px; cursor: pointer; user-select: none; }
+.visibility-row input { position: absolute; opacity: 0; pointer-events: none; }
+.switch-track { position: relative; width: 32px; height: 17px; flex: 0 0 auto; border: 1px solid var(--line-strong); border-radius: 999px; background: rgba(5, 9, 11, 0.65); transition: background 0.15s, border-color 0.15s; }
+.switch-track::after { content: ""; position: absolute; top: 2px; left: 2px; width: 11px; height: 11px; border-radius: 50%; background: var(--faint); transition: transform 0.15s, background 0.15s; }
+.visibility-row input:checked + .switch-track { border-color: rgba(201, 168, 106, 0.7); background: rgba(201, 168, 106, 0.2); }
+.visibility-row input:checked + .switch-track::after { transform: translateX(15px); background: var(--gold-bright); }
+.visibility-row input:focus-visible + .switch-track { outline: 1px solid var(--gold); outline-offset: 2px; }
+.visibility-row input:not(:checked) ~ span:last-child { color: rgba(224, 139, 124, 0.8); }
 
 .country-tools { display: flex; flex-direction: column; gap: 7px; margin-bottom: 8px; }
 .search {
@@ -129,19 +137,32 @@ code { padding: 1px 5px; border-radius: 2px; background: rgba(201, 168, 106, 0.1
 
 .country-list { max-height: 292px; overflow: auto; border: 1px solid rgba(255, 255, 255, 0.04); border-radius: 3px; background: rgba(4, 8, 10, 0.26); scrollbar-width: thin; scrollbar-color: rgba(201, 168, 106, 0.25) transparent; }
 .country-row {
-  display: grid; grid-template-columns: 8px 42px minmax(0, 1fr) auto;
-  align-items: center; gap: 8px; width: 100%; min-height: 31px; padding: 0 9px;
-  border: 0; border-bottom: 1px solid rgba(255, 255, 255, 0.035);
-  background: transparent; color: var(--muted); text-align: left; font-size: 11px; cursor: pointer;
+  display: grid; grid-template-columns: minmax(0, 1fr) 30px;
+  align-items: stretch; min-height: 31px; border-bottom: 1px solid rgba(255, 255, 255, 0.035);
+  background: transparent;
 }
 .country-row:last-child { border-bottom: 0; }
 .country-row:hover { background: rgba(201, 168, 106, 0.06); }
-.country-row.is-active { background: rgba(201, 168, 106, 0.12); color: var(--ink); }
-.country-row.is-hidden { display: none; }
+.country-row.is-active { background: rgba(201, 168, 106, 0.12); }
+.country-row.is-hidden-country .row-main { opacity: 0.42; }
+.row-main {
+  display: grid; grid-template-columns: 8px 42px minmax(0, 1fr) auto; align-items: center; gap: 8px;
+  width: 100%; min-height: 31px; padding: 0 0 0 9px; border: 0; background: transparent;
+  color: var(--muted); text-align: left; font-size: 11px; cursor: pointer;
+}
+.country-row.is-active .row-main { color: var(--ink); }
+.row-main:focus-visible, .row-eye:focus-visible { outline: 1px solid var(--gold); outline-offset: -2px; }
 .row-swatch { width: 8px; height: 20px; border-radius: 2px; }
 .row-code { color: var(--gold); font-family: var(--mono); font-size: 9.5px; letter-spacing: 0.06em; }
 .row-name { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .row-count { color: var(--faint); font-size: 9px; }
+.row-eye {
+  display: grid; place-items: center; width: 30px; border: 0; background: transparent;
+  color: var(--faint); cursor: pointer;
+}
+.row-eye:hover { color: var(--gold-bright); }
+.row-eye svg { width: 14px; height: 14px; }
+.country-row.is-hidden-country .row-eye { color: rgba(224, 139, 124, 0.75); }
 
 .output-actions { display: flex; gap: 7px; margin-top: 10px; }
 #download, #copy { flex: 1; min-height: 36px; }

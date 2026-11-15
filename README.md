@@ -145,7 +145,7 @@ npm run dev
 # http://localhost:5173/map-generator/
 ```
 
-支持选择 / 新增国家、点击地图分配省份、修改国家名称与颜色、即时预览、下载或复制完整 `hoi4-map` JSON。详细说明见 `map-generator/README.md`。
+支持选择 / 新增国家、点击地图分配省份、修改国家名称与颜色、按国家开关是否在地图上渲染，并即时预览、下载或复制完整 `hoi4-map` JSON。被隐藏的国家不会写进导出文件。详细说明见 `map-generator/README.md`。
 
 > 这个工具**不参与 `npm run build`**，不会被打包进 `dist/`，也不会部署到线上。
 
