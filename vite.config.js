@@ -9,8 +9,7 @@ export default defineConfig({
     rollupOptions: {
       input: {
         main: resolve(process.cwd(), 'index.html'),
-        mapDemo: resolve(process.cwd(), 'map-demo.html'),
-        mapGenerator: resolve(process.cwd(), 'map-generator/index.html')
+        mapDemo: resolve(process.cwd(), 'map-demo.html')
       }
     }
   },

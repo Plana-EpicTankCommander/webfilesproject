@@ -10,11 +10,7 @@ npm run dev
 # http://localhost:5173/map-generator/
 ```
 
-构建后访问：
-
-```text
-dist/map-generator/index.html
-```
+> 这是本地开发工具，不进入 `npm run build`，不会生成 `dist/map-generator/`，也不会部署到线上。
 
 ## 用法
 

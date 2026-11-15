@@ -138,7 +138,7 @@
 
 ### 🧰 地图 JSON 生成器
 
-`map-generator/` 是一个本地网页工具，用来从世界地图裁剪区域数据：
+`map-generator/` 是一个**仅本地使用**的网页工具，用来从世界地图裁剪区域数据：
 
 ```bash
 npm run dev
@@ -146,6 +146,8 @@ npm run dev
 ```
 
 选择国家、设置标题 / 边距 / 文件名后，可即时预览、下载或复制生成的 JSON；输出结构可直接放到 `sth_ineed/maps/<id>-map.json`，文章写 `[map:<id>]` 即可使用。详细说明见 `map-generator/README.md`。
+
+> 这个工具**不参与 `npm run build`**，不会被打包进 `dist/`，也不会部署到线上。
 
 ### 📄 插入 PDF
 
