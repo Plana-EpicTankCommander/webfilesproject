@@ -81,7 +81,15 @@
               <span class="switch-track" aria-hidden="true"></span>
               <span>显示在地图上</span>
             </label>
-            <p class="hint">点击右侧地图上的省份，把它加入当前国家；再次点击其他省份可连续添加。</p>
+            <div class="mode-row">
+              <span class="mode-label">点击模式</span>
+              <div class="mode-switch" role="group" aria-label="地图点击模式">
+                <button type="button" id="mode-assign" class="is-active" aria-pressed="true">分配</button>
+                <button type="button" id="mode-delete" aria-pressed="false">删除</button>
+              </div>
+              <button type="button" id="undo-delete" class="btn btn-small" hidden>撤销删除</button>
+            </div>
+            <p id="mode-hint" class="hint">点击右侧地图上的省份，把它加入当前国家；再次点击其他省份可连续添加。</p>
           </section>
 
           <section class="panel">

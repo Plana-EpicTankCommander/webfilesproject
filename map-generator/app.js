@@ -30,6 +30,8 @@ const state = {
   batchMode: false,
   batchSelected: new Set(),
   shadeVariation: false,
+  mode: 'assign',
+  lastDeleted: null,
   toastTimer: 0
 }
 
@@ -43,6 +45,10 @@ const activeNameZhInput = $('#active-name-zh')
 const activeNameEnInput = $('#active-name-en')
 const activeColorInput = $('#active-color')
 const activeVisibleInput = $('#active-visible')
+const modeAssignButton = $('#mode-assign')
+const modeDeleteButton = $('#mode-delete')
+const undoDeleteButton = $('#undo-delete')
+const modeHint = $('#mode-hint')
 const batchModeButton = $('#batch-mode')
 const batchActions = $('#batch-actions')
 const batchCount = $('#batch-count')
@@ -375,6 +381,45 @@ function activeCountry() {
   return findCountry(state.activeCode)
 }
 
+function updateMapActiveLabel() {
+  if (state.mode === 'delete') {
+    mapActive.textContent = '删除模式 · 点击地块移除'
+    return
+  }
+  const country = activeCountry()
+  if (!country) {
+    mapActive.textContent = '未选择国家'
+    return
+  }
+  mapActive.textContent = country.hidden
+    ? `当前：${country.nameZh || country.name}（已隐藏）`
+    : `当前：${country.nameZh || country.name}`
+}
+
+function updateUndoButton() {
+  undoDeleteButton.hidden = !state.lastDeleted
+}
+
+function updateModeUi() {
+  const deleting = state.mode === 'delete'
+  modeAssignButton.classList.toggle('is-active', !deleting)
+  modeDeleteButton.classList.toggle('is-active', deleting)
+  modeAssignButton.setAttribute('aria-pressed', String(!deleting))
+  modeDeleteButton.setAttribute('aria-pressed', String(deleting))
+  modeHint.classList.toggle('is-delete', deleting)
+  modeHint.textContent = deleting
+    ? '删除模式：点击地图上的地块，把它从所属国家移除；可点“撤销删除”恢复上一次操作。'
+    : '点击右侧地图上的省份，把它加入当前国家；再次点击其他省份可连续添加。'
+  if (state.map?.canvas) state.map.canvas.style.cursor = deleting ? 'crosshair' : ''
+  updateUndoButton()
+  updateMapActiveLabel()
+}
+
+function setMode(mode) {
+  state.mode = mode === 'delete' ? 'delete' : 'assign'
+  updateModeUi()
+}
+
 function renderActive() {
   const country = activeCountry()
   if (!country) {
@@ -386,7 +431,7 @@ function renderActive() {
     activeNameEnInput.value = ''
     activeVisibleInput.checked = false
     activeVisibleInput.disabled = true
-    mapActive.textContent = '未选择国家'
+    updateMapActiveLabel()
     return
   }
 
@@ -399,9 +444,7 @@ function renderActive() {
   activeColorInput.value = country.color
   activeVisibleInput.checked = !country.hidden
   activeVisibleInput.disabled = false
-  mapActive.textContent = country.hidden
-    ? `当前：${country.nameZh || country.name}（已隐藏）`
-    : `当前：${country.nameZh || country.name}`
+  updateMapActiveLabel()
 }
 
 function renderCountryList() {
@@ -498,6 +541,7 @@ function renderAll() {
   renderCountryList()
   updateStats()
   syncMapTitle()
+  updateModeUi()
 }
 
 function syncMapTitle() {
@@ -523,13 +567,49 @@ function createMap() {
     showProvinceShading: state.shadeVariation,
     showGraticule: false,
     showLegend: false,
-    onDivisionClick: (division) => assignDivision(division.id)
+    onDivisionClick: (division) => {
+      if (state.mode === 'delete') deleteDivision(division.id)
+      else assignDivision(division.id)
+    }
   })
 
   mapOverlay.classList.add('is-hidden')
+  updateModeUi()
+}
+
+function deleteDivision(id) {
+  const division = findDivision(id)
+  if (!division) return
+  const country = findCountry(division.country)
+  const index = state.data.divisions.indexOf(division)
+  if (index < 0) return
+
+  state.lastDeleted = {
+    division,
+    index,
+    countryCode: division.country,
+    name: division.nameZh || division.name,
+    countryName: country?.nameZh || country?.name || division.country
+  }
+  state.data.divisions.splice(index, 1)
+  rebuildMap()
+  showToast(`已从 ${state.lastDeleted.countryName} 移除 ${state.lastDeleted.name}。`)
+}
+
+function undoDelete() {
+  const deleted = state.lastDeleted
+  if (!deleted) return
+  const division = deleted.division
+  if (findDivision(division.id)) division.id = nextDivisionId(deleted.countryCode)
+  division.country = deleted.countryCode
+  state.data.divisions.splice(Math.min(deleted.index, state.data.divisions.length), 0, division)
+  state.lastDeleted = null
+  rebuildMap()
+  showToast(`已恢复 ${deleted.name}。`)
 }
 
 function assignDivision(id) {
+  state.lastDeleted = null
   const country = activeCountry()
   if (!country) {
     showToast('先在左侧选择一个国家。')
@@ -648,6 +728,7 @@ function batchClearSelection() {
 
 function addCountry(event) {
   event.preventDefault()
+  state.lastDeleted = null
   const code = $('#new-code').value.trim().toUpperCase()
   const nameZh = $('#new-name-zh').value.trim()
   const name = $('#new-name-en').value.trim() || nameZh
@@ -718,6 +799,8 @@ function applyData(data, base) {
   state.geom = buildGeometry(data)
   state.batchMode = false
   state.batchSelected.clear()
+  state.mode = 'assign'
+  state.lastDeleted = null
   countryList.classList.remove('is-batch')
   batchActions.hidden = true
   batchModeButton.textContent = '批量操作'
@@ -854,6 +937,10 @@ function bindEvents() {
     setCountryVisibility(state.activeCode, activeVisibleInput.checked)
   })
 
+  modeAssignButton.addEventListener('click', () => setMode('assign'))
+  modeDeleteButton.addEventListener('click', () => setMode('delete'))
+  undoDeleteButton.addEventListener('click', undoDelete)
+
   shadeVariationInput.addEventListener('change', () => {
     state.shadeVariation = shadeVariationInput.checked
     if (state.map) state.map.options.showProvinceShading = state.shadeVariation
@@ -879,4 +966,5 @@ function bindEvents() {
 
 bindEvents()
 updateBatchBar()
+updateModeUi()
 loadBase('world')
