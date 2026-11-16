@@ -1,5 +1,5 @@
 /*! hoi4-map · HOI4-style interactive atlas · Natural Earth 1:10m */
-const D = `
+const E = `
 :host {
   display: block;
   position: relative;
@@ -548,88 +548,88 @@ const T = {
   onDivisionClick: null,
   data: null,
   interactive: !0
-}, C = /* @__PURE__ */ new Map();
-function E(h = {}) {
-  return { ...T, ...h };
+}, S = /* @__PURE__ */ new Map();
+function O(d = {}) {
+  return { ...T, ...d };
 }
-function L(h) {
-  if (typeof h == "number" && Number.isFinite(h)) return `${Math.max(220, h)}px`;
-  if (typeof h == "string" && h.trim()) {
-    const t = h.trim();
+function W(d) {
+  if (typeof d == "number" && Number.isFinite(d)) return `${Math.max(220, d)}px`;
+  if (typeof d == "string" && d.trim()) {
+    const t = d.trim();
     return /^\d+(\.\d+)?$/.test(t) ? `${Math.max(220, Number(t))}px` : t;
   }
   return T.height;
 }
-function W(h) {
-  if (typeof h == "number" && Number.isFinite(h)) return h;
-  if (typeof h == "string") {
-    const t = h.trim().match(/^(\d+(?:\.\d+)?)(px)?$/);
+function R(d) {
+  if (typeof d == "number" && Number.isFinite(d)) return d;
+  if (typeof d == "string") {
+    const t = d.trim().match(/^(\d+(?:\.\d+)?)(px)?$/);
     if (t) return Number(t[1]);
   }
   return null;
 }
-function O(h) {
-  if (typeof h == "number" && Number.isFinite(h)) return `${Math.min(100, Math.max(20, h))}%`;
-  if (typeof h == "string" && h.trim()) {
-    const t = h.trim();
+function F(d) {
+  if (typeof d == "number" && Number.isFinite(d)) return `${Math.min(100, Math.max(20, d))}%`;
+  if (typeof d == "string" && d.trim()) {
+    const t = d.trim();
     return /^\d+(\.\d+)?$/.test(t) ? `${Math.min(100, Math.max(20, Number(t)))}%` : t;
   }
   return T.width;
 }
-function p(h, t, e) {
-  return Math.min(e, Math.max(t, h));
+function p(d, t, e) {
+  return Math.min(e, Math.max(t, d));
 }
-function F(h, t, e) {
-  const i = p((e - h) / (t - h), 0, 1);
+function _(d, t, e) {
+  const i = p((e - d) / (t - d), 0, 1);
   return i * i * (3 - 2 * i);
 }
-function R(h) {
+function D(d) {
   let t = 0, e = 0;
   const i = [];
-  for (let s = 0; s + 1 < h.length; s += 2)
-    t += h[s], e += h[s + 1], i.push([t, e]);
+  for (let s = 0; s + 1 < d.length; s += 2)
+    t += d[s], e += d[s + 1], i.push([t, e]);
   return i;
 }
-async function q(h, t) {
-  if (C.has(h)) {
-    const i = C.get(h);
+async function q(d, t) {
+  if (S.has(d)) {
+    const i = S.get(d);
     return i instanceof Promise, i;
   }
   const e = (async () => {
-    const i = await fetch(h, { cache: "no-cache" });
+    const i = await fetch(d, { cache: "no-cache" });
     if (!i.ok) throw new Error(`地图数据请求失败：HTTP ${i.status}`);
     const s = Number(i.headers.get("content-length")) || 0;
     if (!i.body || !s) {
-      const d = await i.json();
-      return t?.(1), d;
+      const c = await i.json();
+      return t?.(1), c;
     }
-    const o = i.body.getReader(), n = [];
-    let r = 0;
+    const o = i.body.getReader(), r = [];
+    let n = 0;
     for (; ; ) {
-      const { done: d, value: f } = await o.read();
-      if (d) break;
-      n.push(f), r += f.length, t?.(p(r / s, 0, 1));
+      const { done: c, value: f } = await o.read();
+      if (c) break;
+      r.push(f), n += f.length, t?.(p(n / s, 0, 1));
     }
     t?.(1);
-    const a = new Uint8Array(r);
-    let c = 0;
-    for (const d of n)
-      a.set(d, c), c += d.length;
-    const l = new TextDecoder("utf-8").decode(a);
-    return JSON.parse(l);
+    const a = new Uint8Array(n);
+    let l = 0;
+    for (const c of r)
+      a.set(c, l), l += c.length;
+    const h = new TextDecoder("utf-8").decode(a);
+    return JSON.parse(h);
   })();
-  C.set(h, e);
+  S.set(d, e);
   try {
     const i = await e;
-    return C.set(h, i), i;
+    return S.set(d, i), i;
   } catch (i) {
-    throw C.delete(h), i;
+    throw S.delete(d), i;
   }
 }
 class N {
   constructor(t, e = {}) {
     if (!t) throw new Error("Hoi4Map 需要一个容器元素");
-    this.host = t, this.options = E(e), this.src = this.options.src || H, this.explicitHeightPx = W(this.options.height), this.destroyed = !1, this.ready = !1, this.data = null, this.pendingReveal = !1, this.viewW = 1, this.viewH = 1, this.dpr = 1, this.fitScale = 1, this.scale = 1, this.tx = 0, this.ty = 0, this.snapMargin = 0, this.pointers = /* @__PURE__ */ new Map(), this.drag = null, this.pinch = null, this.dragging = !1, this.hoverDivision = null, this.hoverCountry = null, this.selectedCountry = null, this.fastRaf = 0, this.qualityRaf = 0, this.settleTimer = 0, this.hintTimer = 0, this.arcs = [], this.fillGroups = /* @__PURE__ */ new Map(), this.countryPathCache = /* @__PURE__ */ new Map(), this.grid = null, this.labelCountries = [], this.bound = {
+    this.host = t, this.options = O(e), this.src = this.options.src || H, this.explicitHeightPx = R(this.options.height), this.destroyed = !1, this.ready = !1, this.data = null, this.pendingReveal = !1, this.viewW = 1, this.viewH = 1, this.dpr = 1, this.fitScale = 1, this.scale = 1, this.tx = 0, this.ty = 0, this.snapMargin = 0, this.pointers = /* @__PURE__ */ new Map(), this.drag = null, this.pinch = null, this.dragging = !1, this.hoverDivision = null, this.hoverCountry = null, this.selectedCountry = null, this.fastRaf = 0, this.qualityRaf = 0, this.settleTimer = 0, this.hintTimer = 0, this.arcs = [], this.fillGroups = /* @__PURE__ */ new Map(), this.countryPathCache = /* @__PURE__ */ new Map(), this.grid = null, this.labelCountries = [], this.bound = {
       pointerDown: (i) => this.onPointerDown(i),
       pointerMove: (i) => this.onPointerMove(i),
       pointerUp: (i) => this.onPointerUp(i),
@@ -656,8 +656,8 @@ class N {
   // DOM
   // ---------------------------------------------------------------------------
   setupDom() {
-    this.host.style.display = this.host.style.display || "block", this.host.style.width = O(this.options.width), this.root = this.host.shadowRoot || this.host.attachShadow({ mode: "open" }), this.root.innerHTML = `
-      <style>${D}</style>
+    this.host.style.display = this.host.style.display || "block", this.host.style.width = F(this.options.width), this.root = this.host.shadowRoot || this.host.attachShadow({ mode: "open" }), this.root.innerHTML = `
+      <style>${E}</style>
       <div class="hm-frame" data-busy="true">
         <canvas class="hm-canvas" tabindex="0" role="application" aria-label="可缩放的世界政治地图"></canvas>
         <div class="hm-grain"></div>
@@ -731,7 +731,7 @@ class N {
 
         <div class="hm-live" aria-live="polite"></div>
       </div>
-    `, this.frame = this.root.querySelector(".hm-frame"), this.canvas = this.root.querySelector(".hm-canvas"), this.ctx = this.canvas.getContext("2d"), this.plate = this.root.querySelector(".hm-plate"), this.plateKicker = this.root.querySelector(".hm-plate-kicker"), this.titleEl = this.root.querySelector(".hm-title"), this.subtitleEl = this.root.querySelector(".hm-subtitle"), this.zoomLabel = this.root.querySelector(".hm-zoom"), this.toolbar = this.root.querySelector(".hm-toolbar"), this.hintEl = this.root.querySelector(".hm-hint"), this.legend = this.root.querySelector(".hm-legend"), this.legendCountries = this.root.querySelector(".hm-legend-countries"), this.legendDivisions = this.root.querySelector(".hm-legend-divisions"), this.tooltip = this.root.querySelector(".hm-tooltip"), this.tooltipCountry = this.root.querySelector(".hm-tt-country"), this.tooltipName = this.root.querySelector(".hm-tt-name"), this.tooltipSub = this.root.querySelector(".hm-tt-sub"), this.card = this.root.querySelector(".hm-card"), this.cardSwatch = this.root.querySelector(".hm-swatch"), this.cardName = this.root.querySelector(".hm-card-name"), this.cardEn = this.root.querySelector(".hm-card-en"), this.cardCode = this.root.querySelector(".hm-card-code"), this.cardCount = this.root.querySelector(".hm-card-count"), this.loading = this.root.querySelector(".hm-loading"), this.progressBar = this.root.querySelector(".hm-progress i"), this.loadingPercent = this.root.querySelector(".hm-loading small"), this.errorBox = this.root.querySelector(".hm-error"), this.errorText = this.root.querySelector(".hm-error-text"), this.live = this.root.querySelector(".hm-live"), this.frame.style.setProperty("--hm-height", L(this.options.height)), this.plateKicker.textContent = this.options.kicker || T.kicker, this.titleEl.textContent = this.options.title || "世界政治地图", this.subtitleEl.textContent = this.options.subtitle || "WORLD POLITICAL MAP", this.plate.hidden = !this.options.showTitle || this.options.title === "none", this.root.querySelector(".hm-compass").hidden = !this.options.showCompass, this.legend.hidden = !this.options.showLegend, document.fullscreenEnabled || (this.root.querySelector(".hm-full").hidden = !0), this.options.interactive || (this.toolbar.hidden = !0, this.hintEl.hidden = !0), this.hintTimer = window.setTimeout(() => this.dismissHint(), 6e3);
+    `, this.frame = this.root.querySelector(".hm-frame"), this.canvas = this.root.querySelector(".hm-canvas"), this.ctx = this.canvas.getContext("2d"), this.plate = this.root.querySelector(".hm-plate"), this.plateKicker = this.root.querySelector(".hm-plate-kicker"), this.titleEl = this.root.querySelector(".hm-title"), this.subtitleEl = this.root.querySelector(".hm-subtitle"), this.zoomLabel = this.root.querySelector(".hm-zoom"), this.toolbar = this.root.querySelector(".hm-toolbar"), this.hintEl = this.root.querySelector(".hm-hint"), this.legend = this.root.querySelector(".hm-legend"), this.legendCountries = this.root.querySelector(".hm-legend-countries"), this.legendDivisions = this.root.querySelector(".hm-legend-divisions"), this.tooltip = this.root.querySelector(".hm-tooltip"), this.tooltipCountry = this.root.querySelector(".hm-tt-country"), this.tooltipName = this.root.querySelector(".hm-tt-name"), this.tooltipSub = this.root.querySelector(".hm-tt-sub"), this.card = this.root.querySelector(".hm-card"), this.cardSwatch = this.root.querySelector(".hm-swatch"), this.cardName = this.root.querySelector(".hm-card-name"), this.cardEn = this.root.querySelector(".hm-card-en"), this.cardCode = this.root.querySelector(".hm-card-code"), this.cardCount = this.root.querySelector(".hm-card-count"), this.loading = this.root.querySelector(".hm-loading"), this.progressBar = this.root.querySelector(".hm-progress i"), this.loadingPercent = this.root.querySelector(".hm-loading small"), this.errorBox = this.root.querySelector(".hm-error"), this.errorText = this.root.querySelector(".hm-error-text"), this.live = this.root.querySelector(".hm-live"), this.frame.style.setProperty("--hm-height", W(this.options.height)), this.plateKicker.textContent = this.options.kicker || T.kicker, this.titleEl.textContent = this.options.title || "世界政治地图", this.subtitleEl.textContent = this.options.subtitle || "WORLD POLITICAL MAP", this.plate.hidden = !this.options.showTitle || this.options.title === "none", this.root.querySelector(".hm-compass").hidden = !this.options.showCompass, this.legend.hidden = !this.options.showLegend, document.fullscreenEnabled || (this.root.querySelector(".hm-full").hidden = !0), this.options.interactive || (this.toolbar.hidden = !0, this.hintEl.hidden = !0), this.hintTimer = window.setTimeout(() => this.dismissHint(), 6e3);
   }
   bindEvents() {
     const t = this.canvas;
@@ -749,8 +749,8 @@ class N {
     e.width = 180, e.height = 180;
     const i = e.getContext("2d"), s = i.createImageData(180, 180);
     for (let o = 0; o < s.data.length; o += 4) {
-      const n = 118 + Math.floor(Math.random() * 118);
-      s.data[o] = n, s.data[o + 1] = n, s.data[o + 2] = n, s.data[o + 3] = Math.floor(Math.random() * 24);
+      const r = 118 + Math.floor(Math.random() * 118);
+      s.data[o] = r, s.data[o + 1] = r, s.data[o + 2] = r, s.data[o + 3] = Math.floor(Math.random() * 24);
     }
     i.putImageData(s, 0, 0), this.frame.style.setProperty("--hm-grain", `url(${e.toDataURL("image/png")})`);
   }
@@ -777,7 +777,7 @@ class N {
   prepare(t) {
     if (!t || !Array.isArray(t.arcs) || !Array.isArray(t.divisions))
       throw new Error("地图 JSON 格式不正确");
-    this.data = t, this.arcs = t.arcs.map(R), this.fillGroups.clear(), this.countryPathCache.clear(), this.hoverDivision = null, this.hoverCountry = null, this.selectedCountry = null, this.countryByCode = new Map(t.countries.map((n) => [n.code, n]));
+    this.data = t, this.arcs = t.arcs.map(D), this.fillGroups.clear(), this.countryPathCache.clear(), this.hoverDivision = null, this.hoverCountry = null, this.selectedCountry = null, this.countryByCode = new Map(t.countries.map((r) => [r.code, r]));
     const e = /* @__PURE__ */ new Map(), i = {
       cols: 56,
       rows: 1,
@@ -785,66 +785,92 @@ class N {
       cells: []
     };
     i.rows = Math.ceil(t.meta.height / i.cell), i.cells = Array.from({ length: i.cols * i.rows }, () => []);
-    for (const n of t.divisions) {
-      const r = this.ringsForDivision(n);
-      if (!r.length) continue;
-      const a = this.pathFromRings(r), c = this.boundsOfRings(r);
-      n._rings = r, n._path = a, n._bbox = c;
-      const l = this.options.showProvinceShading ? n.color : this.countryByCode.get(n.country)?.color || n.color;
-      let d = this.fillGroups.get(l);
-      d || (d = new Path2D(), this.fillGroups.set(l, d)), d.addPath(a);
-      const f = p(Math.floor((c[0] - t.meta.width * 0) / i.cell), 0, i.cols - 1), g = p(Math.floor(c[2] / i.cell), 0, i.cols - 1), S = p(Math.floor(c[1] / i.cell), 0, i.rows - 1), M = p(Math.floor(c[3] / i.cell), 0, i.rows - 1);
-      for (let b = S; b <= M; b++)
-        for (let v = f; v <= g; v++)
-          i.cells[b * i.cols + v].push(n);
-      e.set(n.id, n);
+    for (const r of t.divisions) {
+      const n = this.ringsForDivision(r);
+      if (!n.length) continue;
+      const a = this.pathFromRings(n), l = this.boundsOfRings(n);
+      r._rings = n, r._path = a, r._bbox = l;
+      const h = this.options.showProvinceShading ? r.color : this.countryByCode.get(r.country)?.color || r.color;
+      let c = this.fillGroups.get(h);
+      c || (c = new Path2D(), this.fillGroups.set(h, c)), c.addPath(a);
+      const f = p(Math.floor((l[0] - t.meta.width * 0) / i.cell), 0, i.cols - 1), b = p(Math.floor(l[2] / i.cell), 0, i.cols - 1), g = p(Math.floor(l[1] / i.cell), 0, i.rows - 1), M = p(Math.floor(l[3] / i.cell), 0, i.rows - 1);
+      for (let y = g; y <= M; y++)
+        for (let C = f; C <= b; C++)
+          i.cells[y * i.cols + C].push(r);
+      e.set(r.id, r);
     }
-    this.grid = i, this.byDivision = e, this.labelCountries = [...t.countries].sort((n, r) => r.area - n.area), this.coastPath = this.pathFromArcList(t.coast || []), this.borderPath = this.pathFromArcList(t.borders || []), this.graticulePath = this.pathFromGraticule(t.graticule || []), this.divisionBorderPath = null, this.detailBorderPath = null, this.detailCountryCodes = [];
+    this.grid = i, this.byDivision = e, this.labelCountries = [...t.countries].sort((r, n) => n.area - r.area), this.coastPath = this.pathFromArcList(t.coast || []), this.borderPath = this.pathFromArcList(t.borders || []), this.graticulePath = this.pathFromGraticule(t.graticule || []), this.divisionBorderPath = null, this.detailBorderPath = null, this.detailCountryCodes = [];
     const s = /* @__PURE__ */ new Set([...t.coast || [], ...t.borders || []]), o = new Set(this.options.detailCountries || t.meta.detailCountries || []);
     if (this.detailCountryCodes = [...o], this.outlineCountryCodes = [...new Set(this.options.outlineCountries || t.meta.outlineCountries || [])], this.options.showDivisionBorders) {
-      const n = /* @__PURE__ */ new Set();
-      for (const r of t.divisions)
-        for (const a of r.polygons || [])
-          for (const c of a)
-            for (const l of c) {
-              const d = l < 0 ? ~l : l;
-              s.has(d) || n.add(d);
+      const r = /* @__PURE__ */ new Set();
+      for (const n of t.divisions)
+        for (const a of n.polygons || [])
+          for (const l of a)
+            for (const h of l) {
+              const c = h < 0 ? ~h : h;
+              s.has(c) || r.add(c);
             }
-      this.divisionBorderPath = this.pathFromArcList([...n]);
+      this.divisionBorderPath = this.pathFromArcList([...r]);
     } else if (o.size) {
-      const n = /* @__PURE__ */ new Set();
-      for (const r of t.divisions)
-        if (o.has(r.country))
-          for (const a of r.polygons || [])
-            for (const c of a)
-              for (const l of c) {
-                const d = l < 0 ? ~l : l;
-                s.has(d) || n.add(d);
+      const r = /* @__PURE__ */ new Set();
+      for (const n of t.divisions)
+        if (o.has(n.country))
+          for (const a of n.polygons || [])
+            for (const l of a)
+              for (const h of l) {
+                const c = h < 0 ? ~h : h;
+                s.has(c) || r.add(c);
               }
-      n.size && (this.detailBorderPath = this.pathFromArcList([...n]));
+      r.size && (this.detailBorderPath = this.pathFromArcList([...r]));
     }
     this.countryPaths = /* @__PURE__ */ new Map();
-    for (const n of t.countries) {
-      const r = this.pathFromArcList(n.arcs || []);
-      this.countryPaths.set(n.code, r);
+    for (const r of t.countries) {
+      const n = this.pathFromArcList(r.arcs || []);
+      this.countryPaths.set(r.code, n), r._labelCenter = this.computeCountryCenter(r);
     }
+  }
+  computeCountryCenter(t) {
+    const e = t.bbox || t.label;
+    if (!e || e.length < 4) return t.label || [0, 0];
+    const i = [];
+    for (const l of t.divisions || []) {
+      const h = this.byDivision?.get(l);
+      h?._rings?.length && h._bbox && i.push(h);
+    }
+    const s = (e[0] + e[2]) / 2, o = (e[1] + e[3]) / 2;
+    if (this.countryContainsPoint(i, s, o)) return [s, o];
+    let r = 0, n = 0, a = 0;
+    for (const l of i) {
+      const h = l._bbox, c = Math.max(0, (h[2] - h[0]) * (h[3] - h[1]));
+      c && (r += c, n += (h[0] + h[2]) / 2 * c, a += (h[1] + h[3]) / 2 * c);
+    }
+    if (r > 0) {
+      const l = n / r, h = a / r;
+      if (this.countryContainsPoint(i, l, h)) return [l, h];
+    }
+    return t.label || [s, o];
+  }
+  countryContainsPoint(t, e, i) {
+    for (const s of t)
+      if (this.pointInRings(s._rings, e, i)) return !0;
+    return !1;
   }
   ringsForDivision(t) {
     const e = [];
     for (const i of t.polygons || [])
       for (const s of i) {
         const o = [];
-        for (const n of s) {
-          const r = n < 0 ? ~n : n, a = this.arcs[r];
+        for (const r of s) {
+          const n = r < 0 ? ~r : r, a = this.arcs[n];
           if (!(!a || a.length === 0))
-            if (n < 0)
-              for (let c = a.length - 1; c >= 0; c--) this.pushPoint(o, a[c]);
+            if (r < 0)
+              for (let l = a.length - 1; l >= 0; l--) this.pushPoint(o, a[l]);
             else
-              for (let c = 0; c < a.length; c++) this.pushPoint(o, a[c]);
+              for (let l = 0; l < a.length; l++) this.pushPoint(o, a[l]);
         }
         if (o.length > 1) {
-          const n = o[0], r = o[o.length - 1];
-          n[0] === r[0] && n[1] === r[1] && o.pop();
+          const r = o[0], n = o[o.length - 1];
+          r[0] === n[0] && r[1] === n[1] && o.pop();
         }
         o.length >= 3 && e.push(o);
       }
@@ -877,7 +903,7 @@ class N {
   pathFromGraticule(t) {
     const e = new Path2D();
     for (const i of t) {
-      const s = R(i);
+      const s = D(i);
       if (!(s.length < 2)) {
         e.moveTo(s[0][0], s[0][1]);
         for (let o = 1; o < s.length; o++) e.lineTo(s[o][0], s[o][1]);
@@ -887,9 +913,9 @@ class N {
   }
   boundsOfRings(t) {
     let e = 1 / 0, i = 1 / 0, s = -1 / 0, o = -1 / 0;
-    for (const n of t)
-      for (const [r, a] of n)
-        r < e && (e = r), a < i && (i = a), r > s && (s = r), a > o && (o = a);
+    for (const r of t)
+      for (const [n, a] of r)
+        n < e && (e = n), a < i && (i = a), n > s && (s = n), a > o && (o = a);
     return [e, i, s, o];
   }
   // ---------------------------------------------------------------------------
@@ -900,19 +926,19 @@ class N {
     const t = this.frame.getBoundingClientRect();
     if (t.width < 2 || t.height < 2) return;
     if (this.ready && this.data && this.explicitHeightPx && document.fullscreenElement !== this.frame) {
-      const l = this.data.meta.width / this.data.meta.height, d = t.width < 760 ? Math.round(Math.max(280, Math.min(this.explicitHeightPx, t.width / l + 128))) : Math.round(this.explicitHeightPx);
-      if (Math.abs(t.height - d) > 2) {
-        this.frame.style.setProperty("--hm-height", `${d}px`);
+      const h = this.data.meta.width / this.data.meta.height, c = t.width < 760 ? Math.round(Math.max(280, Math.min(this.explicitHeightPx, t.width / h + 128))) : Math.round(this.explicitHeightPx);
+      if (Math.abs(t.height - c) > 2) {
+        this.frame.style.setProperty("--hm-height", `${c}px`);
         return;
       }
     }
-    const e = this.fitScale, i = this.scale, s = this.viewW, o = this.viewH, n = e ? (s / 2 - this.tx) / i : 0, r = e ? (o / 2 - this.ty) / i : 0;
+    const e = this.fitScale, i = this.scale, s = this.viewW, o = this.viewH, r = e ? (s / 2 - this.tx) / i : 0, n = e ? (o / 2 - this.ty) / i : 0;
     this.viewW = Math.max(2, this.frame.clientWidth), this.viewH = Math.max(2, this.frame.clientHeight), this.dpr = p(window.devicePixelRatio || 1, 1, 2), this.canvas.width = Math.max(1, Math.round(this.viewW * this.dpr)), this.canvas.height = Math.max(1, Math.round(this.viewH * this.dpr)), this.ctx = this.canvas.getContext("2d"), this.snapMargin = Math.round(Math.min(this.viewW, this.viewH) * 0.32);
-    const a = Math.round((this.viewW + this.snapMargin * 2) * this.dpr), c = Math.round((this.viewH + this.snapMargin * 2) * this.dpr);
-    if (this.mapCanvas || (this.mapCanvas = document.createElement("canvas")), this.mapCanvas.width = Math.max(1, a), this.mapCanvas.height = Math.max(1, c), this.mapCtx = this.mapCanvas.getContext("2d"), this.snapshot = null, this.buildOcean(), this.ready && this.data) {
+    const a = Math.round((this.viewW + this.snapMargin * 2) * this.dpr), l = Math.round((this.viewH + this.snapMargin * 2) * this.dpr);
+    if (this.mapCanvas || (this.mapCanvas = document.createElement("canvas")), this.mapCanvas.width = Math.max(1, a), this.mapCanvas.height = Math.max(1, l), this.mapCtx = this.mapCanvas.getContext("2d"), this.snapshot = null, this.buildOcean(), this.ready && this.data) {
       if (this.fitScale = this.computeFitScale(), e > 0 && i > 0) {
-        const l = i / e;
-        this.scale = p(this.fitScale * l, this.fitScale * 1, this.fitScale * 32), this.tx = this.viewW / 2 - n * this.scale, this.ty = this.viewH / 2 - r * this.scale;
+        const h = i / e;
+        this.scale = p(this.fitScale * h, this.fitScale * 1, this.fitScale * 32), this.tx = this.viewW / 2 - r * this.scale, this.ty = this.viewH / 2 - n * this.scale;
       } else
         this.scale = this.fitScale, this.tx = (this.viewW - this.data.meta.width * this.scale) / 2, this.ty = (this.viewH - this.data.meta.height * this.scale) / 2;
       this.clampTransform(), this.updateToolbar(), this.invalidateQuality();
@@ -920,15 +946,15 @@ class N {
       this.renderEmpty();
   }
   setHeight(t) {
-    this.options.height = t, this.explicitHeightPx = W(t), this.frame.style.setProperty("--hm-height", L(t)), this.resize();
+    this.options.height = t, this.explicitHeightPx = R(t), this.frame.style.setProperty("--hm-height", W(t)), this.resize();
   }
   contentBounds() {
     if (!this.data) return [0, 0, 1, 1];
     const t = [0, 0, this.data.meta.width, this.data.meta.height];
     let e = 1 / 0, i = 1 / 0, s = -1 / 0, o = -1 / 0;
-    for (const n of this.data.countries || []) {
-      const r = n.bbox;
-      !r || r.length < 4 || r[2] > r[0] && r[3] > r[1] && (e = Math.min(e, r[0]), i = Math.min(i, r[1]), s = Math.max(s, r[2]), o = Math.max(o, r[3]));
+    for (const r of this.data.countries || []) {
+      const n = r.bbox;
+      !n || n.length < 4 || n[2] > n[0] && n[3] > n[1] && (e = Math.min(e, n[0]), i = Math.min(i, n[1]), s = Math.max(s, n[2]), o = Math.max(o, n[3]));
     }
     return Number.isFinite(e) ? [e, i, s, o] : t;
   }
@@ -969,18 +995,18 @@ class N {
     }
     if (!i)
       return this.resetView(!1), !1;
-    const [s, o, n, r] = i.bbox, a = Number.isFinite(i.label?.[0]) ? i.label[0] : (s + n) / 2, c = Number.isFinite(i.label?.[1]) ? i.label[1] : (o + r) / 2, l = Math.max(n - s, r - o);
-    let d = Math.max(1.2, Math.min(32, e));
-    if (l > 0 && l < 220) {
-      const g = Math.min(this.viewW, this.viewH) * 0.5 / (l * this.fitScale);
-      d = Math.max(d, p(g, 2.6, 32));
+    const [s, o, r, n] = i.bbox, a = i._labelCenter || i.label, l = Number.isFinite(a?.[0]) ? a[0] : (s + r) / 2, h = Number.isFinite(a?.[1]) ? a[1] : (o + n) / 2, c = Math.max(r - s, n - o);
+    let f = Math.max(1.2, Math.min(32, e));
+    if (c > 0 && c < 220) {
+      const g = Math.min(this.viewW, this.viewH) * 0.5 / (c * this.fitScale);
+      f = Math.max(f, p(g, 2.6, 32));
     }
-    const f = p(
-      this.fitScale * d,
+    const b = p(
+      this.fitScale * f,
       this.fitScale * 1,
       this.fitScale * 32
     );
-    return this.scale = f, this.tx = this.viewW / 2 - a * f, this.ty = this.viewH / 2 - c * f, this.clampTransform(), this.updateToolbar(), this.invalidateFast(), this.scheduleQuality(100), !0;
+    return this.scale = b, this.tx = this.viewW / 2 - l * b, this.ty = this.viewH / 2 - h * b, this.clampTransform(), this.updateToolbar(), this.invalidateFast(), this.scheduleQuality(100), !0;
   }
   setView({ focus: t = "", zoom: e = 0 } = {}) {
     return t ? this.focusOn(t, Number(e) || 2.6) : Number(e) > 1 ? (this.scale = p(this.fitScale * Number(e), this.fitScale * 1, this.fitScale * 32), this.tx = this.viewW / 2 - this.data.meta.width * this.scale / 2, this.ty = this.viewH / 2 - this.data.meta.height * this.scale / 2, this.clampTransform(), this.updateToolbar(), this.invalidateFast(), this.scheduleQuality(100), !0) : (this.resetView(), !0);
@@ -994,8 +1020,8 @@ class N {
     if (!this.ready) return;
     const s = p(t, this.fitScale * 1, this.fitScale * 32);
     if (Math.abs(s - this.scale) < 1e-9) return;
-    const o = (e - this.tx) / this.scale, n = (i - this.ty) / this.scale;
-    this.scale = s, this.tx = e - o * s, this.ty = i - n * s, this.clampTransform(), this.updateToolbar(), this.invalidateFast(), this.scheduleQuality(180), this.dismissHint();
+    const o = (e - this.tx) / this.scale, r = (i - this.ty) / this.scale;
+    this.scale = s, this.tx = e - o * s, this.ty = i - r * s, this.clampTransform(), this.updateToolbar(), this.invalidateFast(), this.scheduleQuality(180), this.dismissHint();
   }
   updateToolbar() {
     if (!this.zoomLabel) return;
@@ -1028,15 +1054,15 @@ class N {
       Math.max(this.viewW, this.viewH) * 0.72
     );
     o.addColorStop(0, "rgba(65, 105, 118, 0.26)"), o.addColorStop(0.48, "rgba(26, 50, 60, 0.12)"), o.addColorStop(1, "rgba(0, 0, 0, 0)"), i.fillStyle = o, i.fillRect(0, 0, this.viewW, this.viewH);
-    const n = Math.round(this.viewW * this.viewH / 900);
-    for (let r = 0; r < n; r++) {
-      const a = Math.random() * this.viewW, c = Math.random() * this.viewH;
-      i.fillStyle = `rgba(174, 204, 210, ${0.012 + Math.random() * 0.022})`, i.fillRect(a, c, 1, 1);
+    const r = Math.round(this.viewW * this.viewH / 900);
+    for (let n = 0; n < r; n++) {
+      const a = Math.random() * this.viewW, l = Math.random() * this.viewH;
+      i.fillStyle = `rgba(174, 204, 210, ${0.012 + Math.random() * 0.022})`, i.fillRect(a, l, 1, 1);
     }
     i.lineWidth = 0.7;
-    for (let r = 0; r < 18; r++) {
-      const a = Math.random() * this.viewH, c = Math.random() * this.viewW, l = 30 + Math.random() * 150;
-      i.beginPath(), i.strokeStyle = `rgba(142, 178, 188, ${0.012 + Math.random() * 0.018})`, i.moveTo(c, a), i.bezierCurveTo(c + l * 0.3, a - 5, c + l * 0.7, a + 5, c + l, a), i.stroke();
+    for (let n = 0; n < 18; n++) {
+      const a = Math.random() * this.viewH, l = Math.random() * this.viewW, h = 30 + Math.random() * 150;
+      i.beginPath(), i.strokeStyle = `rgba(142, 178, 188, ${0.012 + Math.random() * 0.018})`, i.moveTo(l, a), i.bezierCurveTo(l + h * 0.3, a - 5, l + h * 0.7, a + 5, l + h, a), i.stroke();
     }
   }
   renderEmpty() {
@@ -1135,23 +1161,23 @@ class N {
     t.save(), t.setTransform(this.dpr * s, 0, 0, this.dpr * s, this.dpr * e, this.dpr * i), t.lineJoin = "round", t.lineCap = "round";
     const o = this.scale / this.fitScale;
     if (this.coastPath && o > 1.18) {
-      const r = p(0.45 + o * 0.1, 0.45, 1), a = [
+      const n = p(0.45 + o * 0.1, 0.45, 1), a = [
         [4.5, "rgba(201, 168, 106, 0.018)"],
         [2.5, "rgba(0, 4, 6, 0.08)"],
         [1.3, "rgba(0, 3, 5, 0.12)"],
         [0.65, "rgba(0, 2, 4, 0.18)"]
       ];
-      for (const [c, l] of a)
-        t.lineWidth = c * r / s, t.strokeStyle = l, t.stroke(this.coastPath);
+      for (const [l, h] of a)
+        t.lineWidth = l * n / s, t.strokeStyle = h, t.stroke(this.coastPath);
     }
-    for (const [r, a] of this.fillGroups)
-      t.fillStyle = r, t.fill(a);
+    for (const [n, a] of this.fillGroups)
+      t.fillStyle = n, t.fill(a);
     this.detailBorderPath && s > this.fitScale * 1.55 && (t.lineWidth = 0.55 / s, t.strokeStyle = "rgba(18, 15, 11, 0.42)", t.stroke(this.detailBorderPath)), this.divisionBorderPath && (t.lineWidth = 0.7 / s, t.strokeStyle = "rgba(18, 15, 11, 0.52)", t.stroke(this.divisionBorderPath)), this.coastPath && (t.lineWidth = 1.25 / s, t.strokeStyle = "rgba(7, 7, 5, 0.95)", t.stroke(this.coastPath)), this.borderPath && (t.lineWidth = 1.55 / s, t.strokeStyle = "rgba(22, 16, 10, 0.93)", t.stroke(this.borderPath), t.lineWidth = 0.55 / s, t.strokeStyle = "rgba(238, 215, 168, 0.10)", t.stroke(this.borderPath));
-    const n = [.../* @__PURE__ */ new Set([...this.detailCountryCodes, ...this.outlineCountryCodes])];
-    if (n.length) {
+    const r = [.../* @__PURE__ */ new Set([...this.detailCountryCodes, ...this.outlineCountryCodes])];
+    if (r.length) {
       t.lineWidth = 1.8 / s, t.strokeStyle = "rgba(7, 7, 5, 0.96)";
-      for (const r of n) {
-        const a = this.countryPaths.get(r);
+      for (const n of r) {
+        const a = this.countryPaths.get(n);
         a && t.stroke(a);
       }
     }
@@ -1178,42 +1204,42 @@ class N {
     if (!this.ready || !this.data) return;
     const e = this.scale / this.fitScale;
     if (e < 1.32) return;
-    const i = F(1.32, 2.05, e), s = Math.max(6, Math.round(this.viewW * this.viewH / 16e3)), o = Math.min(
+    const i = _(1.32, 2.05, e), s = Math.max(6, Math.round(this.viewW * this.viewH / 16e3)), o = Math.min(
       s,
       e < 1.9 ? 16 : e < 2.8 ? 34 : e < 4.5 ? 55 : 80
-    ), n = [];
-    let r = 0;
-    const a = this.frame.getBoundingClientRect(), c = [];
-    for (const l of [this.plate, this.toolbar, this.legend]) {
-      if (!l || l.hidden) continue;
-      const d = l.getBoundingClientRect();
-      d.width < 1 || d.height < 1 || c.push({
-        x: d.left - a.left - 8,
-        y: d.top - a.top - 8,
-        w: d.width + 16,
-        h: d.height + 16
+    ), r = [];
+    let n = 0;
+    const a = this.frame.getBoundingClientRect(), l = [];
+    for (const h of [this.plate, this.toolbar, this.legend]) {
+      if (!h || h.hidden) continue;
+      const c = h.getBoundingClientRect();
+      c.width < 1 || c.height < 1 || l.push({
+        x: c.left - a.left - 8,
+        y: c.top - a.top - 8,
+        w: c.width + 16,
+        h: c.height + 16
       });
     }
     t.setTransform(this.dpr, 0, 0, this.dpr, 0, 0), t.textAlign = "center", t.textBaseline = "middle", t.lineJoin = "round";
-    for (const l of this.labelCountries) {
-      if (r >= o) break;
-      const d = l.bbox, f = d[0] * this.scale + this.tx, g = d[1] * this.scale + this.ty, S = d[2] * this.scale + this.tx, M = d[3] * this.scale + this.ty;
-      if (S < -30 || f > this.viewW + 30 || M < -20 || g > this.viewH + 20) continue;
-      const b = S - f, v = M - g;
-      if (b < 26 || v < 11) continue;
-      const x = l.label[0] * this.scale + this.tx, w = l.label[1] * this.scale + this.ty;
-      if (x < 16 || x > this.viewW - 16 || w < 16 || w > this.viewH - 16) continue;
+    for (const h of this.labelCountries) {
+      if (n >= o) break;
+      const c = h.bbox, f = c[0] * this.scale + this.tx, b = c[1] * this.scale + this.ty, g = c[2] * this.scale + this.tx, M = c[3] * this.scale + this.ty;
+      if (g < -30 || f > this.viewW + 30 || M < -20 || b > this.viewH + 20) continue;
+      const y = g - f, C = M - b;
+      if (y < 26 || C < 11) continue;
+      const L = h._labelCenter || h.label, w = L[0] * this.scale + this.tx, v = L[1] * this.scale + this.ty;
+      if (w < 16 || w > this.viewW - 16 || v < 16 || v > this.viewH - 16) continue;
       const k = Math.min(15, 11 + e * 0.55), A = `600 ${k}px "Noto Serif SC", "Songti SC", "STSong", "SimSun", Georgia, serif`;
       t.font = A;
-      const z = l.nameZh || l.name, P = t.measureText(z).width;
-      if (P > Math.max(b * 1.45, 48) && e < 4.5 || e < 5 && z.length > 6 && b < 160) continue;
-      const m = {
-        x: x - P / 2 - 4,
-        y: w - k * 0.75 - 3,
+      const z = h.nameZh || h.name, P = t.measureText(z).width;
+      if (P > Math.max(y * 1.45, 48) && e < 4.5 || e < 5 && z.length > 6 && y < 160) continue;
+      const u = {
+        x: w - P / 2 - 4,
+        y: v - k * 0.75 - 3,
         w: P + 8,
         h: k * 1.5 + 6
       };
-      m.x < 2 || m.x + m.w > this.viewW - 2 || m.y < 2 || m.y + m.h > this.viewH - 2 || c.some((u) => m.x < u.x + u.w && m.x + m.w > u.x && m.y < u.y + u.h && m.y + m.h > u.y) || n.some((u) => m.x < u.x + u.w && m.x + m.w > u.x && m.y < u.y + u.h && m.y + m.h > u.y) || (n.push(m), t.save(), t.globalAlpha = i * (e > 2.4 ? 0.92 : 0.74), "letterSpacing" in t && (t.letterSpacing = "1.4px"), t.strokeStyle = "rgba(3, 7, 9, 0.82)", t.lineWidth = 3.4, t.strokeText(z, x, w), t.fillStyle = "#f2e8d3", t.fillText(z, x, w), e > 2.9 && b > 84 && l.name && (t.globalAlpha = i * 0.45, t.font = '8px Georgia, "Times New Roman", serif', "letterSpacing" in t && (t.letterSpacing = "2.2px"), t.fillStyle = "#e4d6b9", t.fillText(l.name.toUpperCase(), x, w + k * 0.98)), t.restore(), r++);
+      u.x < 2 || u.x + u.w > this.viewW - 2 || u.y < 2 || u.y + u.h > this.viewH - 2 || l.some((m) => u.x < m.x + m.w && u.x + u.w > m.x && u.y < m.y + m.h && u.y + u.h > m.y) || r.some((m) => u.x < m.x + m.w && u.x + u.w > m.x && u.y < m.y + m.h && u.y + u.h > m.y) || (r.push(u), t.save(), t.globalAlpha = i * (e > 2.4 ? 0.92 : 0.74), "letterSpacing" in t && (t.letterSpacing = "1.4px"), t.strokeStyle = "rgba(3, 7, 9, 0.82)", t.lineWidth = 3.4, t.strokeText(z, w, v), t.fillStyle = "#f2e8d3", t.fillText(z, w, v), e > 2.9 && y > 84 && h.name && (t.globalAlpha = i * 0.45, t.font = '8px Georgia, "Times New Roman", serif', "letterSpacing" in t && (t.letterSpacing = "2.2px"), t.fillStyle = "#e4d6b9", t.fillText(h.name.toUpperCase(), w, v + k * 0.98)), t.restore(), n++);
     }
   }
   // ---------------------------------------------------------------------------
@@ -1221,22 +1247,22 @@ class N {
   // ---------------------------------------------------------------------------
   pick(t, e) {
     if (!this.grid || !this.data) return null;
-    const { cols: i, rows: s, cell: o, cells: n } = this.grid;
+    const { cols: i, rows: s, cell: o, cells: r } = this.grid;
     if (t < 0 || e < 0 || t > this.data.meta.width || e > this.data.meta.height) return null;
-    const r = p(Math.floor(t / o), 0, i - 1), a = p(Math.floor(e / o), 0, s - 1), c = n[a * i + r];
-    for (let l = c.length - 1; l >= 0; l--) {
-      const d = c[l], f = d._bbox;
-      if (!(!f || t < f[0] || t > f[2] || e < f[1] || e > f[3]) && this.pointInRings(d._rings, t, e))
-        return d;
+    const n = p(Math.floor(t / o), 0, i - 1), a = p(Math.floor(e / o), 0, s - 1), l = r[a * i + n];
+    for (let h = l.length - 1; h >= 0; h--) {
+      const c = l[h], f = c._bbox;
+      if (!(!f || t < f[0] || t > f[2] || e < f[1] || e > f[3]) && this.pointInRings(c._rings, t, e))
+        return c;
     }
     return null;
   }
   pointInRings(t, e, i) {
     let s = !1;
     for (const o of t)
-      for (let n = 0, r = o.length - 1; n < o.length; r = n++) {
-        const a = o[n][0], c = o[n][1], l = o[r][0], d = o[r][1];
-        c > i != d > i && e < (l - a) * (i - c) / (d - c || 1e-9) + a && (s = !s);
+      for (let r = 0, n = o.length - 1; r < o.length; n = r++) {
+        const a = o[r][0], l = o[r][1], h = o[n][0], c = o[n][1];
+        l > i != c > i && e < (h - a) * (i - l) / (c - l || 1e-9) + a && (s = !s);
       }
     return s;
   }
@@ -1284,12 +1310,12 @@ class N {
       return;
     }
     if (this.pointers.set(t.pointerId, { x: t.clientX, y: t.clientY }), this.pointers.size === 2 && this.pinch) {
-      const [e, i] = [...this.pointers.values()], s = Math.hypot(e.x - i.x, e.y - i.y) || 1, o = (e.x + i.x) / 2, n = (e.y + i.y) / 2, r = p(
+      const [e, i] = [...this.pointers.values()], s = Math.hypot(e.x - i.x, e.y - i.y) || 1, o = (e.x + i.x) / 2, r = (e.y + i.y) / 2, n = p(
         this.pinch.scale * (s / this.pinch.distance),
         this.fitScale * 1,
         this.fitScale * 32
-      ), a = this.canvas.getBoundingClientRect(), c = this.pinch.midX - a.left, l = this.pinch.midY - a.top, d = (c - this.pinch.tx) / this.pinch.scale, f = (l - this.pinch.ty) / this.pinch.scale;
-      this.scale = r, this.tx = o - a.left - d * r, this.ty = n - a.top - f * r, this.clampTransform(), this.updateToolbar(), this.invalidateFast(), this.scheduleQuality(220);
+      ), a = this.canvas.getBoundingClientRect(), l = this.pinch.midX - a.left, h = this.pinch.midY - a.top, c = (l - this.pinch.tx) / this.pinch.scale, f = (h - this.pinch.ty) / this.pinch.scale;
+      this.scale = n, this.tx = o - a.left - c * n, this.ty = r - a.top - f * n, this.clampTransform(), this.updateToolbar(), this.invalidateFast(), this.scheduleQuality(220);
       return;
     }
     if (this.drag && this.pointers.size === 1) {
@@ -1416,9 +1442,9 @@ class N {
       "--hm-tt-color",
       this.options.showProvinceShading ? t.color : s.color
     ), this.tooltip.classList.add("is-visible");
-    const o = this.tooltip.offsetWidth, n = this.tooltip.offsetHeight;
-    let r = e + 16, a = i + 16;
-    r + o > this.viewW - 8 && (r = e - o - 14), a + n > this.viewH - 8 && (a = i - n - 14), r = p(r, 8, Math.max(8, this.viewW - o - 8)), a = p(a, 8, Math.max(8, this.viewH - n - 8)), this.tooltip.style.left = `${r}px`, this.tooltip.style.top = `${a}px`;
+    const o = this.tooltip.offsetWidth, r = this.tooltip.offsetHeight;
+    let n = e + 16, a = i + 16;
+    n + o > this.viewW - 8 && (n = e - o - 14), a + r > this.viewH - 8 && (a = i - r - 14), n = p(n, 8, Math.max(8, this.viewW - o - 8)), a = p(a, 8, Math.max(8, this.viewH - r - 8)), this.tooltip.style.left = `${n}px`, this.tooltip.style.top = `${a}px`;
   }
   hideTooltip() {
     this.tooltip.classList.remove("is-visible"), (this.hoverDivision || this.hoverCountry) && (this.hoverDivision = null, this.hoverCountry = null, this.invalidate());
@@ -1448,10 +1474,10 @@ class N {
     }), this.host.__hoi4Map === this && delete this.host.__hoi4Map, this.data && (this.data = null);
   }
 }
-function y(h, t = !0) {
-  return h == null ? t : h !== "false" && h !== "0";
+function x(d, t = !0) {
+  return d == null ? t : d !== "false" && d !== "0";
 }
-class _ extends HTMLElement {
+class I extends HTMLElement {
   static get observedAttributes() {
     return ["src", "height", "width", "title", "subtitle", "focus", "zoom", "fit", "show-title", "show-compass", "show-graticule", "show-province-shading"];
   }
@@ -1471,10 +1497,10 @@ class _ extends HTMLElement {
       focus: (this.getAttribute("focus") || "").toUpperCase(),
       zoom: Number.isFinite(e) ? e : 0,
       fit: this.getAttribute("fit") === "cover" ? "cover" : "contain",
-      showTitle: y(this.getAttribute("show-title")),
-      showCompass: y(this.getAttribute("show-compass")),
-      showGraticule: y(this.getAttribute("show-graticule"), !1),
-      showProvinceShading: y(this.getAttribute("show-province-shading"), !1)
+      showTitle: x(this.getAttribute("show-title")),
+      showCompass: x(this.getAttribute("show-compass")),
+      showGraticule: x(this.getAttribute("show-graticule"), !1),
+      showProvinceShading: x(this.getAttribute("show-province-shading"), !1)
     });
   }
   disconnectedCallback() {
@@ -1516,28 +1542,28 @@ class _ extends HTMLElement {
       return;
     }
     if (t === "show-title") {
-      s.options.showTitle = y(i), s.plate.hidden = !s.options.showTitle || s.options.title === "none";
+      s.options.showTitle = x(i), s.plate.hidden = !s.options.showTitle || s.options.title === "none";
       return;
     }
     if (t === "show-compass") {
-      s.options.showCompass = y(i);
+      s.options.showCompass = x(i);
       const o = s.root.querySelector(".hm-compass");
       o && (o.hidden = !s.options.showCompass);
       return;
     }
     if (t === "show-graticule") {
-      s.options.showGraticule = y(i, !1), s.invalidateQuality();
+      s.options.showGraticule = x(i, !1), s.invalidateQuality();
       return;
     }
-    t === "show-province-shading" && (s.options.showProvinceShading = y(i, !1), s.setData(s.data));
+    t === "show-province-shading" && (s.options.showProvinceShading = x(i, !1), s.setData(s.data));
   }
 }
-function I(h = "hoi4-map") {
-  return typeof customElements > "u" ? !1 : (customElements.get(h) || customElements.define(h, _), !0);
+function G(d = "hoi4-map") {
+  return typeof customElements > "u" ? !1 : (customElements.get(d) || customElements.define(d, I), !0);
 }
-I();
+G();
 export {
   N as Hoi4Map,
-  _ as Hoi4MapElement,
-  I as defineHoi4Map
+  I as Hoi4MapElement,
+  G as defineHoi4Map
 };

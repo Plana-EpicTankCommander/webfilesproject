@@ -560,7 +560,53 @@ export class Hoi4Map {
     for (const country of data.countries) {
       const path = this.pathFromArcList(country.arcs || [])
       this.countryPaths.set(country.code, path)
+      country._labelCenter = this.computeCountryCenter(country)
     }
+  }
+
+  computeCountryCenter(country) {
+    const bbox = country.bbox || country.label
+    if (!bbox || bbox.length < 4) return country.label || [0, 0]
+    const divisions = []
+    for (const id of country.divisions || []) {
+      const division = this.byDivision?.get(id)
+      if (division?._rings?.length && division._bbox) divisions.push(division)
+    }
+
+    // Prefer the center of the country's bounding box when it is actually
+    // inside the country; this is the most literal "middle of the country".
+    const bboxX = (bbox[0] + bbox[2]) / 2
+    const bboxY = (bbox[1] + bbox[3]) / 2
+    if (this.countryContainsPoint(divisions, bboxX, bboxY)) return [bboxX, bboxY]
+
+    // For countries with overseas territories or concave shapes, fall back to
+    // an area-weighted center so the label stays on the main landmass.
+    let sumWeight = 0
+    let sumX = 0
+    let sumY = 0
+    for (const division of divisions) {
+      const b = division._bbox
+      const weight = Math.max(0, (b[2] - b[0]) * (b[3] - b[1]))
+      if (!weight) continue
+      sumWeight += weight
+      sumX += ((b[0] + b[2]) / 2) * weight
+      sumY += ((b[1] + b[3]) / 2) * weight
+    }
+
+    if (sumWeight > 0) {
+      const x = sumX / sumWeight
+      const y = sumY / sumWeight
+      if (this.countryContainsPoint(divisions, x, y)) return [x, y]
+    }
+
+    return country.label || [bboxX, bboxY]
+  }
+
+  countryContainsPoint(divisions, x, y) {
+    for (const division of divisions) {
+      if (this.pointInRings(division._rings, x, y)) return true
+    }
+    return false
   }
 
   ringsForDivision(division) {
@@ -801,10 +847,11 @@ export class Hoi4Map {
       return false
     }
     const [x0, y0, x1, y1] = country.bbox
-    // Overseas territories can make a country's bbox enormous; the label
-    // anchor is a much better focus point (e.g. mainland France).
-    const centerX = Number.isFinite(country.label?.[0]) ? country.label[0] : (x0 + x1) / 2
-    const centerY = Number.isFinite(country.label?.[1]) ? country.label[1] : (y0 + y1) / 2
+    // Use the same visual center as the label, so focusing a country puts its
+    // name in the middle of the viewport.
+    const center = country._labelCenter || country.label
+    const centerX = Number.isFinite(center?.[0]) ? center[0] : (x0 + x1) / 2
+    const centerY = Number.isFinite(center?.[1]) ? center[1] : (y0 + y1) / 2
     const span = Math.max(x1 - x0, y1 - y0)
     let multiplier = Math.max(1.2, Math.min(MAX_ZOOM, zoomMultiplier))
     if (span > 0 && span < 220) {
@@ -1260,8 +1307,9 @@ export class Hoi4Map {
       const height = y1 - y0
       if (width < 26 || height < 11) continue
 
-      const sx = country.label[0] * this.scale + this.tx
-      const sy = country.label[1] * this.scale + this.ty
+      const center = country._labelCenter || country.label
+      const sx = center[0] * this.scale + this.tx
+      const sy = center[1] * this.scale + this.ty
       if (sx < 16 || sx > this.viewW - 16 || sy < 16 || sy > this.viewH - 16) continue
 
       const fontSize = Math.min(15, 11 + zoom * 0.55)
