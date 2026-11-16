@@ -529,11 +529,18 @@ export class Hoi4Map {
     this.detailCountryCodes = [...detail]
     this.outlineCountryCodes = [...new Set(this.options.outlineCountries || data.meta.outlineCountries || [])]
     if (this.options.showDivisionBorders) {
-      const internal = []
-      for (let i = 0; i < data.arcs.length; i++) {
-        if (!national.has(i)) internal.push(i)
+      const internal = new Set()
+      for (const division of data.divisions) {
+        for (const polygon of division.polygons || []) {
+          for (const refs of polygon) {
+            for (const ref of refs) {
+              const index = ref < 0 ? ~ref : ref
+              if (!national.has(index)) internal.add(index)
+            }
+          }
+        }
       }
-      this.divisionBorderPath = this.pathFromArcList(internal)
+      this.divisionBorderPath = this.pathFromArcList([...internal])
     } else if (detail.size) {
       const detailArcs = new Set()
       for (const division of data.divisions) {
@@ -713,14 +720,41 @@ export class Hoi4Map {
     this.resize()
   }
 
+  contentBounds() {
+    if (!this.data) return [0, 0, 1, 1]
+    const fallback = [0, 0, this.data.meta.width, this.data.meta.height]
+    let minX = Infinity
+    let minY = Infinity
+    let maxX = -Infinity
+    let maxY = -Infinity
+    for (const country of this.data.countries || []) {
+      const bbox = country.bbox
+      if (!bbox || bbox.length < 4) continue
+      if (!(bbox[2] > bbox[0] && bbox[3] > bbox[1])) continue
+      minX = Math.min(minX, bbox[0])
+      minY = Math.min(minY, bbox[1])
+      maxX = Math.max(maxX, bbox[2])
+      maxY = Math.max(maxY, bbox[3])
+    }
+    if (!Number.isFinite(minX)) return fallback
+    return [minX, minY, maxX, maxY]
+  }
+
   computeFitScale() {
     if (!this.data) return 1
-    const worldW = this.data.meta.width
-    const worldH = this.data.meta.height
+    const bounds = this.contentBounds()
+    const worldW = Math.max(1, bounds[2] - bounds[0])
+    const worldH = Math.max(1, bounds[3] - bounds[1])
     const raw = this.options.fit === 'cover'
       ? Math.max(this.viewW / worldW, this.viewH / worldH)
       : Math.min(this.viewW / worldW, this.viewH / worldH)
     return raw * (this.options.fit === 'cover' ? 1.01 : 0.965)
+  }
+
+  fitContent(animate = true) {
+    if (!this.ready) return
+    this.fitScale = this.computeFitScale()
+    this.resetView(animate)
   }
 
   applyInitialView() {
@@ -733,8 +767,9 @@ export class Hoi4Map {
       this.focusOn(focus, zoom || 2.6)
     } else if (zoom > MIN_ZOOM) {
       this.scale = clamp(this.fitScale * zoom, this.fitScale * MIN_ZOOM, this.fitScale * MAX_ZOOM)
-      this.tx = this.viewW / 2 - (this.data.meta.width * this.scale) / 2
-      this.ty = this.viewH / 2 - (this.data.meta.height * this.scale) / 2
+      const bounds = this.contentBounds()
+      this.tx = this.viewW / 2 - ((bounds[0] + bounds[2]) / 2) * this.scale
+      this.ty = this.viewH / 2 - ((bounds[1] + bounds[3]) / 2) * this.scale
       this.clampTransform()
     } else {
       this.resetView(false)
@@ -745,8 +780,9 @@ export class Hoi4Map {
   resetView(animate = true) {
     if (!this.ready) return
     this.scale = this.fitScale
-    this.tx = (this.viewW - this.data.meta.width * this.scale) / 2
-    this.ty = (this.viewH - this.data.meta.height * this.scale) / 2
+    const bounds = this.contentBounds()
+    this.tx = this.viewW / 2 - ((bounds[0] + bounds[2]) / 2) * this.scale
+    this.ty = this.viewH / 2 - ((bounds[1] + bounds[3]) / 2) * this.scale
     this.updateToolbar()
     this.invalidateFast()
     this.scheduleQuality(100)

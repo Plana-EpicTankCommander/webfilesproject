@@ -714,6 +714,7 @@ function setCountryVisibility(code, visible) {
   if (!country) return
   country.hidden = !visible
   rebuildMap()
+  state.map?.fitContent(false)
   showToast(visible ? `${country.nameZh} 已显示在地图上。` : `${country.nameZh} 已从地图上隐藏。`)
 }
 
@@ -741,6 +742,7 @@ function batchSetVisibility(show) {
     if (country) country.hidden = !show
   }
   rebuildMap()
+  state.map?.fitContent(false)
   showToast(`已${show ? '显示' : '隐藏'} ${state.batchSelected.size} 个国家。`)
 }
 
