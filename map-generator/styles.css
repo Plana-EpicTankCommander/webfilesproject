@@ -129,6 +129,9 @@ code { padding: 1px 5px; border-radius: 2px; background: rgba(201, 168, 106, 0.1
 #mode-delete.is-active { background: rgba(224, 139, 124, 0.16); color: var(--danger); }
 #undo-delete { margin-left: auto; min-height: 27px; }
 .hint.is-delete { border-left-color: rgba(224, 139, 124, 0.65); background: rgba(224, 139, 124, 0.07); color: rgba(239, 178, 166, 0.9); }
+.danger-row { margin-top: 10px; padding-top: 10px; border-top: 1px solid rgba(224, 139, 124, 0.16); }
+.btn-danger { border-color: rgba(224, 139, 124, 0.42); color: var(--danger); }
+.btn-danger:hover:not(:disabled) { border-color: rgba(224, 139, 124, 0.72); background: rgba(224, 139, 124, 0.09); color: #f0b2a6; }
 
 .country-tools { display: flex; flex-direction: column; gap: 7px; margin-bottom: 8px; }
 .batch-tools { display: flex; flex-direction: column; gap: 6px; }

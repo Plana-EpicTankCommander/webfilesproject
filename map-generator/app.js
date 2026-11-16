@@ -32,6 +32,7 @@ const state = {
   shadeVariation: false,
   mode: 'assign',
   lastDeleted: null,
+  lastDeletedCountry: null,
   toastTimer: 0
 }
 
@@ -49,6 +50,7 @@ const modeAssignButton = $('#mode-assign')
 const modeDeleteButton = $('#mode-delete')
 const undoDeleteButton = $('#undo-delete')
 const modeHint = $('#mode-hint')
+const deleteCountryButton = $('#delete-country')
 const batchModeButton = $('#batch-mode')
 const batchActions = $('#batch-actions')
 const batchCount = $('#batch-count')
@@ -397,7 +399,7 @@ function updateMapActiveLabel() {
 }
 
 function updateUndoButton() {
-  undoDeleteButton.hidden = !state.lastDeleted
+  undoDeleteButton.hidden = !state.lastDeleted && !state.lastDeletedCountry
 }
 
 function updateModeUi() {
@@ -431,6 +433,7 @@ function renderActive() {
     activeNameEnInput.value = ''
     activeVisibleInput.checked = false
     activeVisibleInput.disabled = true
+    deleteCountryButton.disabled = true
     updateMapActiveLabel()
     return
   }
@@ -444,6 +447,7 @@ function renderActive() {
   activeColorInput.value = country.color
   activeVisibleInput.checked = !country.hidden
   activeVisibleInput.disabled = false
+  deleteCountryButton.disabled = false
   updateMapActiveLabel()
 }
 
@@ -584,6 +588,7 @@ function deleteDivision(id) {
   const index = state.data.divisions.indexOf(division)
   if (index < 0) return
 
+  state.lastDeletedCountry = null
   state.lastDeleted = {
     division,
     index,
@@ -596,7 +601,51 @@ function deleteDivision(id) {
   showToast(`已从 ${state.lastDeleted.countryName} 移除 ${state.lastDeleted.name}。`)
 }
 
+function deleteCountry() {
+  const country = activeCountry()
+  if (!country) return
+  const code = country.code
+  const entries = state.data.divisions
+    .map((division, index) => ({ division, index }))
+    .filter(({ division }) => division.country === code)
+  const name = country.nameZh || country.name
+  if (!window.confirm(`删除国家 ${code} ${name}？\n其下 ${entries.length} 个地块会一并删除。`)) return
+
+  const countryIndex = state.data.countries.indexOf(country)
+  state.lastDeleted = null
+  state.lastDeletedCountry = {
+    country,
+    countryIndex,
+    entries,
+    activeCode: state.activeCode
+  }
+  state.data.countries.splice(countryIndex, 1)
+  state.data.divisions = state.data.divisions.filter((division) => division.country !== code)
+  state.batchSelected.delete(code)
+  state.activeCode = state.data.countries[Math.min(countryIndex, state.data.countries.length - 1)]?.code || ''
+  rebuildMap()
+  showToast(`已删除国家 ${code} ${name}，共移除 ${entries.length} 个地块。`)
+}
+
 function undoDelete() {
+  if (state.lastDeletedCountry) {
+    const deleted = state.lastDeletedCountry
+    const { country, entries } = deleted
+    if (!findCountry(country.code)) {
+      state.data.countries.splice(Math.min(deleted.countryIndex, state.data.countries.length), 0, country)
+    }
+    for (const { division } of entries) {
+      if (findDivision(division.id)) division.id = nextDivisionId(country.code)
+      division.country = country.code
+      state.data.divisions.push(division)
+    }
+    state.lastDeletedCountry = null
+    if (findCountry(deleted.activeCode)) state.activeCode = deleted.activeCode
+    rebuildMap()
+    showToast(`已恢复国家 ${country.code} ${country.nameZh || country.name}。`)
+    return
+  }
+
   const deleted = state.lastDeleted
   if (!deleted) return
   const division = deleted.division
@@ -610,6 +659,7 @@ function undoDelete() {
 
 function assignDivision(id) {
   state.lastDeleted = null
+  state.lastDeletedCountry = null
   const country = activeCountry()
   if (!country) {
     showToast('先在左侧选择一个国家。')
@@ -729,6 +779,7 @@ function batchClearSelection() {
 function addCountry(event) {
   event.preventDefault()
   state.lastDeleted = null
+  state.lastDeletedCountry = null
   const code = $('#new-code').value.trim().toUpperCase()
   const nameZh = $('#new-name-zh').value.trim()
   const name = $('#new-name-en').value.trim() || nameZh
@@ -801,6 +852,7 @@ function applyData(data, base) {
   state.batchSelected.clear()
   state.mode = 'assign'
   state.lastDeleted = null
+  state.lastDeletedCountry = null
   countryList.classList.remove('is-batch')
   batchActions.hidden = true
   batchModeButton.textContent = '批量操作'
@@ -940,6 +992,7 @@ function bindEvents() {
   modeAssignButton.addEventListener('click', () => setMode('assign'))
   modeDeleteButton.addEventListener('click', () => setMode('delete'))
   undoDeleteButton.addEventListener('click', undoDelete)
+  deleteCountryButton.addEventListener('click', deleteCountry)
 
   shadeVariationInput.addEventListener('change', () => {
     state.shadeVariation = shadeVariationInput.checked
