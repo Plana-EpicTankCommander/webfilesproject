@@ -36,8 +36,7 @@ internal static class Program
 
         string packagedServer = Path.Combine(BaseDir, "server.mjs");
         string bundledNode = Path.Combine(BaseDir, "runtime", "node.exe");
-        string packageJson = Path.Combine(BaseDir, "package.json");
-        string viteCmd = Path.Combine(BaseDir, "node_modules", ".bin", "vite.cmd");
+        string editorServer = Path.Combine(BaseDir, "scripts", "editor-server.mjs");
 
         ProcessStartInfo info;
         if (File.Exists(packagedServer) && File.Exists(bundledNode))
@@ -45,36 +44,16 @@ internal static class Program
             Environment.SetEnvironmentVariable("MAP_EDITOR_OPEN", "0");
             info = new ProcessStartInfo(bundledNode, "server.mjs");
         }
-        else if (File.Exists(packageJson))
+        else if (File.Exists(editorServer))
         {
-            if (!File.Exists(viteCmd))
-            {
-                Console.WriteLine("  [首次运行] 正在安装依赖，请稍候...");
-                ProcessStartInfo install = new ProcessStartInfo("cmd.exe", "/d /s /c \"npm install\"");
-                install.WorkingDirectory = BaseDir;
-                install.UseShellExecute = false;
-                install.CreateNoWindow = false;
-                Process installer = Process.Start(install);
-                if (installer == null)
-                {
-                    Console.WriteLine("  [错误] 无法启动 npm install。");
-                    Pause();
-                    return 1;
-                }
-                installer.WaitForExit();
-                if (installer.ExitCode != 0)
-                {
-                    Console.WriteLine("  [错误] 依赖安装失败。");
-                    Pause();
-                    return 1;
-                }
-            }
-            info = new ProcessStartInfo("cmd.exe", "/d /s /c \"npm run dev -- --host 127.0.0.1 --port 5173 --strictPort\"");
+            // Source checkout: serve only map-generator and src/map. This does
+            // not start the full website Vite server.
+            info = new ProcessStartInfo("node.exe", "scripts/editor-server.mjs");
         }
         else
         {
             Console.WriteLine("  [错误] 找不到编辑器文件。");
-            Console.WriteLine("  请确认压缩包已完整解压，或 node_modules 已安装。");
+            Console.WriteLine("  请确认压缩包已完整解压。");
             Pause();
             return 1;
         }
