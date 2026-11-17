@@ -79,6 +79,9 @@ export function formatMapJson(data) {
   const graticule = `[\n${data.graticule
     .map((arc) => indent(2) + formatNumberArray(arc, 2, 12))
     .join(',\n')}\n${indent(1)}]`
+  const countryFills = data.countryFills && Object.keys(data.countryFills).length
+    ? `,\n  "countryFills": ${JSON.stringify(data.countryFills)}`
+    : ''
 
   return `{
   "format": ${JSON.stringify(data.format)},
@@ -89,7 +92,7 @@ export function formatMapJson(data) {
   "arcs": ${arcs},
   "coast": ${formatNumberArray(data.coast, 1, 20)},
   "borders": ${formatNumberArray(data.borders, 1, 20)},
-  "graticule": ${graticule}
+  "graticule": ${graticule}${countryFills}
 }
 `
 }

@@ -545,7 +545,7 @@ export function getMapUrl(mapId = 'world') {
   const safeId = /^[a-z0-9-]+$/i.test(mapId) ? mapId : 'world'
   // Cache-bust the raw CDN after map data updates; GitHub raw otherwise keeps
   // serving the previous JSON for a while.
-  return `${GITHUB_RAW}/${config.owner}/${config.repo}/${config.branch}/${config.baseDir}/${safeId}-map.json?v=20261120`
+  return `${GITHUB_RAW}/${config.owner}/${config.repo}/${config.branch}/${config.baseDir}/${safeId}-map.json?v=20261121`
 }
 
 export function getPdfRawUrl(path) {

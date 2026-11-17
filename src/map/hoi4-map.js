@@ -583,7 +583,16 @@ export class Hoi4Map {
       if (country.hidden) continue
       const path = this.pathFromArcList(country.arcs || [])
       this.countryPaths.set(country.code, path)
-      this.countryFillPaths.set(country.code, this.pathFromArcRings(country.arcs || []))
+      const fill = data.countryFills?.[country.code]
+      if (fill) {
+        const rings = []
+        for (const polygon of fill) {
+          for (const ring of polygon) rings.push(ring)
+        }
+        this.countryFillPaths.set(country.code, this.pathFromRings(rings))
+      } else {
+        this.countryFillPaths.set(country.code, this.pathFromArcRings(country.arcs || []))
+      }
     }
   }
 

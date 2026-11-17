@@ -168,6 +168,9 @@ function formatMapJson(data) {
   const graticule = `[\n${data.graticule
     .map((arc) => indent(2) + formatNumberArray(arc, 2, 12))
     .join(',\n')}\n${indent(1)}]`
+  const countryFills = data.countryFills && Object.keys(data.countryFills).length
+    ? `,\n  "countryFills": ${JSON.stringify(data.countryFills)}`
+    : ''
 
   return `{
   "format": ${JSON.stringify(data.format)},
@@ -178,7 +181,7 @@ function formatMapJson(data) {
   "arcs": ${arcs},
   "coast": ${formatNumberArray(data.coast, 1, 20)},
   "borders": ${formatNumberArray(data.borders, 1, 20)},
-  "graticule": ${graticule}
+  "graticule": ${graticule}${countryFills}
 }
 `
 }
@@ -439,6 +442,44 @@ function build() {
       Math.round(((projected[0] - px0) / projectedWidth) * WORLD_WIDTH),
       Math.round(((projected[1] - py0) / projectedWidth) * WORLD_WIDTH)
     ]
+  }
+
+  // The political divisions come from different sources (DataV China cities,
+  // geoBoundaries Russia). Their outer borders can leave a thin sea-coloured
+  // gap. Country-level fills from one shared source (Natural Earth Admin-0)
+  // sit underneath the divisions and close those gaps.
+  const countryFills = {}
+  for (const feature of admin0.features) {
+    const code = feature.properties.ADM0_A3
+    if (!['CHN', 'RUS'].includes(code)) continue
+    const geometry = feature.geometry
+    const polygons = geometry.type === 'Polygon' ? [geometry.coordinates] : geometry.coordinates
+    const projectedPolygons = []
+    for (const polygon of polygons) {
+      const rings = []
+      for (const ring of polygon) {
+        const projected = []
+        let lastX = null
+        let lastY = null
+        for (const lonLat of ring) {
+          const point = projectPoint(lonLat)
+          if (!point) continue
+          const [x, y] = point
+          if (x === lastX && y === lastY) continue
+          projected.push([x, y])
+          lastX = x
+          lastY = y
+        }
+        if (projected.length > 1) {
+          const first = projected[0]
+          const last = projected[projected.length - 1]
+          if (first[0] === last[0] && first[1] === last[1]) projected.pop()
+        }
+        if (projected.length >= 3) rings.push(projected)
+      }
+      if (rings.length) projectedPolygons.push(rings)
+    }
+    if (projectedPolygons.length) countryFills[code] = projectedPolygons
   }
 
   // Project shared arcs once, then strip duplicate quantized points.
@@ -709,7 +750,8 @@ function build() {
     arcs,
     coast: coast.sort((a, b) => a - b),
     borders: borders.sort((a, b) => a - b),
-    graticule
+    graticule,
+    countryFills
   }
 
   // ---- 9. Validation ---------------------------------------------------------

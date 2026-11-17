@@ -1,5 +1,5 @@
 /*! hoi4-map · HOI4-style interactive atlas · Natural Earth 1:10m */
-const O = `
+const F = `
 :host {
   display: block;
   position: relative;
@@ -549,7 +549,7 @@ const T = {
   data: null,
   interactive: !0
 }, k = /* @__PURE__ */ new Map();
-function E(d = {}) {
+function O(d = {}) {
   return { ...T, ...d };
 }
 function D(d) {
@@ -560,7 +560,7 @@ function D(d) {
   }
   return T.height;
 }
-function A(d) {
+function R(d) {
   if (typeof d == "number" && Number.isFinite(d)) return d;
   if (typeof d == "string") {
     const t = d.trim().match(/^(\d+(?:\.\d+)?)(px)?$/);
@@ -568,7 +568,7 @@ function A(d) {
   }
   return null;
 }
-function F(d) {
+function E(d) {
   if (typeof d == "number" && Number.isFinite(d)) return `${Math.min(100, Math.max(20, d))}%`;
   if (typeof d == "string" && d.trim()) {
     const t = d.trim();
@@ -583,7 +583,7 @@ function _(d, t, e) {
   const i = f((e - d) / (t - d), 0, 1);
   return i * i * (3 - 2 * i);
 }
-function R(d) {
+function A(d) {
   let t = 0, e = 0;
   const i = [];
   for (let s = 0; s + 1 < d.length; s += 2)
@@ -629,7 +629,7 @@ async function N(d, t) {
 class q {
   constructor(t, e = {}) {
     if (!t) throw new Error("Hoi4Map 需要一个容器元素");
-    this.host = t, this.options = E(e), this.src = this.options.src || W, this.explicitHeightPx = A(this.options.height), this.destroyed = !1, this.ready = !1, this.data = null, this.pendingReveal = !1, this.viewW = 1, this.viewH = 1, this.dpr = 1, this.fitScale = 1, this.scale = 1, this.tx = 0, this.ty = 0, this.snapMargin = 0, this.pointers = /* @__PURE__ */ new Map(), this.drag = null, this.pinch = null, this.dragging = !1, this.hoverDivision = null, this.hoverCountry = null, this.selectedCountry = null, this.fastRaf = 0, this.qualityRaf = 0, this.settleTimer = 0, this.hintTimer = 0, this.arcs = [], this.fillGroups = /* @__PURE__ */ new Map(), this.countryPathCache = /* @__PURE__ */ new Map(), this.grid = null, this.labelCountries = [], this.bound = {
+    this.host = t, this.options = O(e), this.src = this.options.src || W, this.explicitHeightPx = R(this.options.height), this.destroyed = !1, this.ready = !1, this.data = null, this.pendingReveal = !1, this.viewW = 1, this.viewH = 1, this.dpr = 1, this.fitScale = 1, this.scale = 1, this.tx = 0, this.ty = 0, this.snapMargin = 0, this.pointers = /* @__PURE__ */ new Map(), this.drag = null, this.pinch = null, this.dragging = !1, this.hoverDivision = null, this.hoverCountry = null, this.selectedCountry = null, this.fastRaf = 0, this.qualityRaf = 0, this.settleTimer = 0, this.hintTimer = 0, this.arcs = [], this.fillGroups = /* @__PURE__ */ new Map(), this.countryPathCache = /* @__PURE__ */ new Map(), this.grid = null, this.labelCountries = [], this.bound = {
       pointerDown: (i) => this.onPointerDown(i),
       pointerMove: (i) => this.onPointerMove(i),
       pointerUp: (i) => this.onPointerUp(i),
@@ -656,8 +656,8 @@ class q {
   // DOM
   // ---------------------------------------------------------------------------
   setupDom() {
-    this.host.style.display = this.host.style.display || "block", this.host.style.width = F(this.options.width), this.root = this.host.shadowRoot || this.host.attachShadow({ mode: "open" }), this.root.innerHTML = `
-      <style>${O}</style>
+    this.host.style.display = this.host.style.display || "block", this.host.style.width = E(this.options.width), this.root = this.host.shadowRoot || this.host.attachShadow({ mode: "open" }), this.root.innerHTML = `
+      <style>${F}</style>
       <div class="hm-frame" data-busy="true">
         <canvas class="hm-canvas" tabindex="0" role="application" aria-label="可缩放的世界政治地图"></canvas>
         <div class="hm-grain"></div>
@@ -777,7 +777,7 @@ class q {
   prepare(t) {
     if (!t || !Array.isArray(t.arcs) || !Array.isArray(t.divisions))
       throw new Error("地图 JSON 格式不正确");
-    this.data = t, this.arcs = t.arcs.map(R), this.fillGroups.clear(), this.countryPathCache.clear(), this.hoverDivision = null, this.hoverCountry = null, this.selectedCountry = null, this.countryByCode = new Map(t.countries.map((o) => [o.code, o]));
+    this.data = t, this.arcs = t.arcs.map(A), this.fillGroups.clear(), this.countryPathCache.clear(), this.hoverDivision = null, this.hoverCountry = null, this.selectedCountry = null, this.countryByCode = new Map(t.countries.map((o) => [o.code, o]));
     const e = /* @__PURE__ */ new Map(), i = {
       cols: 56,
       rows: 1,
@@ -791,8 +791,8 @@ class q {
     for (const o of t.divisions) {
       const l = this.ringsForDivision(o);
       if (!l.length) continue;
-      const p = this.pathFromRings(l), m = this.boundsOfRings(l);
-      if (o._rings = l, o._path = p, o._bbox = m, s.has(o.country))
+      const p = this.pathFromRings(l), u = this.boundsOfRings(l);
+      if (o._rings = l, o._path = p, o._bbox = u, s.has(o.country))
         h.addPath(p);
       else {
         const y = this.options.showProvinceShading ? o.color : this.countryByCode.get(o.country)?.color || o.color;
@@ -802,7 +802,7 @@ class q {
           for (const H of M)
             for (const v of H) n.add(v < 0 ? ~v : v);
       }
-      const w = f(Math.floor((m[0] - t.meta.width * 0) / i.cell), 0, i.cols - 1), S = f(Math.floor(m[2] / i.cell), 0, i.cols - 1), P = f(Math.floor(m[1] / i.cell), 0, i.rows - 1), z = f(Math.floor(m[3] / i.cell), 0, i.rows - 1);
+      const w = f(Math.floor((u[0] - t.meta.width * 0) / i.cell), 0, i.cols - 1), S = f(Math.floor(u[2] / i.cell), 0, i.cols - 1), P = f(Math.floor(u[1] / i.cell), 0, i.rows - 1), z = f(Math.floor(u[3] / i.cell), 0, i.rows - 1);
       for (let y = P; y <= z; y++)
         for (let b = w; b <= S; b++)
           i.cells[y * i.cols + b].push(o);
@@ -817,8 +817,8 @@ class q {
       for (const l of t.divisions)
         if (!s.has(l.country))
           for (const p of l.polygons || [])
-            for (const m of p)
-              for (const g of m) {
+            for (const u of p)
+              for (const g of u) {
                 const w = g < 0 ? ~g : g;
                 a.has(w) || o.add(w);
               }
@@ -828,8 +828,8 @@ class q {
       for (const l of t.divisions)
         if (!(s.has(l.country) || !c.has(l.country)))
           for (const p of l.polygons || [])
-            for (const m of p)
-              for (const g of m) {
+            for (const u of p)
+              for (const g of u) {
                 const w = g < 0 ? ~g : g;
                 a.has(w) || o.add(w);
               }
@@ -839,7 +839,15 @@ class q {
     for (const o of t.countries) {
       if (o._labelCenter = this.computeCountryCenter(o), o.hidden) continue;
       const l = this.pathFromArcList(o.arcs || []);
-      this.countryPaths.set(o.code, l), this.countryFillPaths.set(o.code, this.pathFromArcRings(o.arcs || []));
+      this.countryPaths.set(o.code, l);
+      const p = t.countryFills?.[o.code];
+      if (p) {
+        const u = [];
+        for (const g of p)
+          for (const w of g) u.push(w);
+        this.countryFillPaths.set(o.code, this.pathFromRings(u));
+      } else
+        this.countryFillPaths.set(o.code, this.pathFromArcRings(o.arcs || []));
     }
   }
   computeCountryCenter(t) {
@@ -949,7 +957,7 @@ class q {
   pathFromGraticule(t) {
     const e = new Path2D();
     for (const i of t) {
-      const s = R(i);
+      const s = A(i);
       if (!(s.length < 2)) {
         e.moveTo(s[0][0], s[0][1]);
         for (let n = 1; n < s.length; n++) e.lineTo(s[n][0], s[n][1]);
@@ -992,7 +1000,7 @@ class q {
       this.renderEmpty();
   }
   setHeight(t) {
-    this.options.height = t, this.explicitHeightPx = A(t), this.frame.style.setProperty("--hm-height", D(t)), this.resize();
+    this.options.height = t, this.explicitHeightPx = R(t), this.frame.style.setProperty("--hm-height", D(t)), this.resize();
   }
   contentBounds() {
     if (!this.data) return [0, 0, 1, 1];
@@ -1048,12 +1056,12 @@ class q {
       const g = Math.min(this.viewW, this.viewH) * 0.5 / (l * this.fitScale);
       p = Math.max(p, f(g, 2.6, 45));
     }
-    const m = f(
+    const u = f(
       this.fitScale * p,
       this.fitScale * 0.5,
       this.fitScale * 45
     );
-    return this.scale = m, this.tx = this.viewW / 2 - c * m, this.ty = this.viewH / 2 - o * m, this.clampTransform(), this.updateToolbar(), this.invalidateFast(), this.scheduleQuality(100), !0;
+    return this.scale = u, this.tx = this.viewW / 2 - c * u, this.ty = this.viewH / 2 - o * u, this.clampTransform(), this.updateToolbar(), this.invalidateFast(), this.scheduleQuality(100), !0;
   }
   setView({ focus: t = "", zoom: e = 0 } = {}) {
     return t ? this.focusOn(t, Number(e) || 2.6) : Number(e) > 1 ? (this.scale = f(this.fitScale * Number(e), this.fitScale * 0.5, this.fitScale * 45), this.tx = this.viewW / 2 - this.data.meta.width * this.scale / 2, this.ty = this.viewH / 2 - this.data.meta.height * this.scale / 2, this.clampTransform(), this.updateToolbar(), this.invalidateFast(), this.scheduleQuality(100), !0) : (this.resetView(), !0);
@@ -1275,9 +1283,9 @@ class q {
     t.setTransform(this.dpr, 0, 0, this.dpr, 0, 0), t.textAlign = "center", t.textBaseline = "middle", t.lineJoin = "round";
     for (const o of this.labelCountries) {
       if (r >= n) break;
-      const l = o.bbox, p = l[0] * this.scale + this.tx, m = l[1] * this.scale + this.ty, g = l[2] * this.scale + this.tx, w = l[3] * this.scale + this.ty;
-      if (g < -30 || p > this.viewW + 30 || w < -20 || m > this.viewH + 20) continue;
-      const S = g - p, P = w - m;
+      const l = o.bbox, p = l[0] * this.scale + this.tx, u = l[1] * this.scale + this.ty, g = l[2] * this.scale + this.tx, w = l[3] * this.scale + this.ty;
+      if (g < -30 || p > this.viewW + 30 || w < -20 || u > this.viewH + 20) continue;
+      const S = g - p, P = w - u;
       if (S < 26 || P < 11) continue;
       const z = o._labelCenter || o.label, y = z[0] * this.scale + this.tx, b = z[1] * this.scale + this.ty;
       if (y < 16 || y > this.viewW - 16 || b < 16 || b > this.viewH - 16) continue;
@@ -1285,13 +1293,13 @@ class q {
       t.font = H;
       const v = o.nameZh || o.name, L = t.measureText(v).width;
       if (L > Math.max(S * 1.45, 48) && e < 4.5 || e < 5 && v.length > 6 && S < 160) continue;
-      const u = {
+      const m = {
         x: y - L / 2 - 4,
         y: b - M * 0.75 - 3,
         w: L + 8,
         h: M * 1.5 + 6
       };
-      u.x < 2 || u.x + u.w > this.viewW - 2 || u.y < 2 || u.y + u.h > this.viewH - 2 || c.some((x) => u.x < x.x + x.w && u.x + u.w > x.x && u.y < x.y + x.h && u.y + u.h > x.y) || h.some((x) => u.x < x.x + x.w && u.x + u.w > x.x && u.y < x.y + x.h && u.y + u.h > x.y) || (h.push(u), t.save(), t.globalAlpha = i * (e > 2.4 ? 0.92 : 0.74), "letterSpacing" in t && (t.letterSpacing = "1.4px"), t.strokeStyle = "rgba(3, 7, 9, 0.82)", t.lineWidth = 3.4, t.strokeText(v, y, b), t.fillStyle = "#f2e8d3", t.fillText(v, y, b), e > 2.9 && S > 84 && o.name && (t.globalAlpha = i * 0.45, t.font = '8px Georgia, "Times New Roman", serif', "letterSpacing" in t && (t.letterSpacing = "2.2px"), t.fillStyle = "#e4d6b9", t.fillText(o.name.toUpperCase(), y, b + M * 0.98)), t.restore(), r++);
+      m.x < 2 || m.x + m.w > this.viewW - 2 || m.y < 2 || m.y + m.h > this.viewH - 2 || c.some((x) => m.x < x.x + x.w && m.x + m.w > x.x && m.y < x.y + x.h && m.y + m.h > x.y) || h.some((x) => m.x < x.x + x.w && m.x + m.w > x.x && m.y < x.y + x.h && m.y + m.h > x.y) || (h.push(m), t.save(), t.globalAlpha = i * (e > 2.4 ? 0.92 : 0.74), "letterSpacing" in t && (t.letterSpacing = "1.4px"), t.strokeStyle = "rgba(3, 7, 9, 0.82)", t.lineWidth = 3.4, t.strokeText(v, y, b), t.fillStyle = "#f2e8d3", t.fillText(v, y, b), e > 2.9 && S > 84 && o.name && (t.globalAlpha = i * 0.45, t.font = '8px Georgia, "Times New Roman", serif', "letterSpacing" in t && (t.letterSpacing = "2.2px"), t.fillStyle = "#e4d6b9", t.fillText(o.name.toUpperCase(), y, b + M * 0.98)), t.restore(), r++);
     }
   }
   // ---------------------------------------------------------------------------
