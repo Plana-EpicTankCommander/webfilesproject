@@ -543,7 +543,9 @@ export function getMusicUrl(section, path) {
 export function getMapUrl(mapId = 'world') {
   const config = REPO_CONFIG.maps
   const safeId = /^[a-z0-9-]+$/i.test(mapId) ? mapId : 'world'
-  return `${GITHUB_RAW}/${config.owner}/${config.repo}/${config.branch}/${config.baseDir}/${safeId}-map.json`
+  // Cache-bust the raw CDN after map data updates; GitHub raw otherwise keeps
+  // serving the previous JSON for a while.
+  return `${GITHUB_RAW}/${config.owner}/${config.repo}/${config.branch}/${config.baseDir}/${safeId}-map.json?v=20261117`
 }
 
 export function getPdfRawUrl(path) {
