@@ -482,6 +482,10 @@ export class Hoi4Map {
     }
     grid.rows = Math.ceil(data.meta.height / grid.cell)
     grid.cells = Array.from({ length: grid.cols * grid.rows }, () => [])
+    const hiddenCountries = new Set(
+      data.countries.filter((country) => country.hidden).map((country) => country.code)
+    )
+    const visibleArcs = new Set()
 
     for (const division of data.divisions) {
       const rings = this.ringsForDivision(division)
@@ -492,15 +496,23 @@ export class Hoi4Map {
       division._path = path
       division._bbox = bbox
 
-      const fillColor = this.options.showProvinceShading
-        ? division.color
-        : (this.countryByCode.get(division.country)?.color || division.color)
-      let group = this.fillGroups.get(fillColor)
-      if (!group) {
-        group = new Path2D()
-        this.fillGroups.set(fillColor, group)
+      const hidden = hiddenCountries.has(division.country)
+      if (!hidden) {
+        const fillColor = this.options.showProvinceShading
+          ? division.color
+          : (this.countryByCode.get(division.country)?.color || division.color)
+        let group = this.fillGroups.get(fillColor)
+        if (!group) {
+          group = new Path2D()
+          this.fillGroups.set(fillColor, group)
+        }
+        group.addPath(path)
+        for (const polygon of division.polygons || []) {
+          for (const refs of polygon) {
+            for (const ref of refs) visibleArcs.add(ref < 0 ? ~ref : ref)
+          }
+        }
       }
-      group.addPath(path)
 
       const col0 = clamp(Math.floor((bbox[0] - data.meta.width * 0) / grid.cell), 0, grid.cols - 1)
       const col1 = clamp(Math.floor(bbox[2] / grid.cell), 0, grid.cols - 1)
@@ -516,10 +528,13 @@ export class Hoi4Map {
 
     this.grid = grid
     this.byDivision = byDivision
-    this.labelCountries = [...data.countries].sort((a, b) => b.area - a.area)
+    this.labelCountries = data.countries
+      .filter((country) => !country.hidden)
+      .sort((a, b) => b.area - a.area)
 
-    this.coastPath = this.pathFromArcList(data.coast || [])
-    this.borderPath = this.pathFromArcList(data.borders || [])
+    const strokeArcs = (list) => (list || []).filter((index) => visibleArcs.has(index))
+    this.coastPath = this.pathFromArcList(strokeArcs(data.coast))
+    this.borderPath = this.pathFromArcList(strokeArcs(data.borders))
     this.graticulePath = this.pathFromGraticule(data.graticule || [])
     this.divisionBorderPath = null
     this.detailBorderPath = null
@@ -531,6 +546,7 @@ export class Hoi4Map {
     if (this.options.showDivisionBorders) {
       const internal = new Set()
       for (const division of data.divisions) {
+        if (hiddenCountries.has(division.country)) continue
         for (const polygon of division.polygons || []) {
           for (const refs of polygon) {
             for (const ref of refs) {
@@ -544,7 +560,7 @@ export class Hoi4Map {
     } else if (detail.size) {
       const detailArcs = new Set()
       for (const division of data.divisions) {
-        if (!detail.has(division.country)) continue
+        if (hiddenCountries.has(division.country) || !detail.has(division.country)) continue
         for (const polygon of division.polygons || []) {
           for (const refs of polygon) {
             for (const ref of refs) {
@@ -558,9 +574,10 @@ export class Hoi4Map {
     }
     this.countryPaths = new Map()
     for (const country of data.countries) {
+      country._labelCenter = this.computeCountryCenter(country)
+      if (country.hidden) continue
       const path = this.pathFromArcList(country.arcs || [])
       this.countryPaths.set(country.code, path)
-      country._labelCenter = this.computeCountryCenter(country)
     }
   }
 
@@ -774,6 +791,7 @@ export class Hoi4Map {
     let maxX = -Infinity
     let maxY = -Infinity
     for (const country of this.data.countries || []) {
+      if (country.hidden) continue
       const bbox = country.bbox
       if (!bbox || bbox.length < 4) continue
       if (!(bbox[2] > bbox[0] && bbox[3] > bbox[1])) continue

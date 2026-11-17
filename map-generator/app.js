@@ -333,15 +333,15 @@ function recomputeGeometry(data) {
   data.meta.generated = new Date().toISOString().slice(0, 10)
 }
 
-function buildRenderData() {
+function makeRenderData(visibleOnly = false) {
   const visibleCountries = state.data.countries.filter((country) => !country.hidden)
   const visibleCodes = new Set(visibleCountries.map((country) => country.code))
   const visibleDivisions = state.data.divisions.filter((division) => visibleCodes.has(division.country))
 
   const render = {
     ...state.data,
-    countries: visibleCountries,
-    divisions: visibleDivisions,
+    countries: visibleOnly ? visibleCountries : state.data.countries,
+    divisions: visibleOnly ? visibleDivisions : state.data.divisions,
     meta: {
       ...state.data.meta,
       countries: visibleCountries.length,
@@ -350,8 +350,20 @@ function buildRenderData() {
     }
   }
   recomputeGeometry(render)
+  render.meta.countries = visibleCountries.length
+  render.meta.divisions = visibleDivisions.length
+  render.meta.arcs = state.data.arcs.length
+  return render
+}
+
+function buildRenderData() {
+  const render = makeRenderData(false)
   state.renderData = render
   return render
+}
+
+function buildVisibleData() {
+  return makeRenderData(true)
 }
 
 function rebuildMap() {
@@ -888,7 +900,7 @@ function cleanJson(data) {
 }
 
 function prepareExport() {
-  const data = state.renderData || state.data
+  const data = buildVisibleData()
   data.meta.title = $('#map-title').value.trim() || '地图'
   data.meta.titleEn = $('#map-title-en').value.trim() || 'MAP'
   data.meta.countries = data.countries.length
