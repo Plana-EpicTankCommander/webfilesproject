@@ -5,6 +5,7 @@ using System.Net;
 using System.Net.Sockets;
 using System.Text;
 using System.Threading;
+using Microsoft.Win32;
 
 internal static class Program
 {
@@ -176,8 +177,90 @@ internal static class Program
         }
     }
 
+    private static string FindChrome()
+    {
+        string[] paths = new string[]
+        {
+            Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.ProgramFiles), "Google", "Chrome", "Application", "chrome.exe"),
+            Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.ProgramFilesX86), "Google", "Chrome", "Application", "chrome.exe"),
+            Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), "Google", "Chrome", "Application", "chrome.exe")
+        };
+        foreach (string path in paths)
+        {
+            if (File.Exists(path)) return path;
+        }
+        return null;
+    }
+
+    private static string FindEdge()
+    {
+        string[] paths = new string[]
+        {
+            Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.ProgramFilesX86), "Microsoft", "Edge", "Application", "msedge.exe"),
+            Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.ProgramFiles), "Microsoft", "Edge", "Application", "msedge.exe")
+        };
+        foreach (string path in paths)
+        {
+            if (File.Exists(path)) return path;
+        }
+        return null;
+    }
+
+    private static string FindChromiumBrowser()
+    {
+        string progId = "";
+        try
+        {
+            object value = Registry.GetValue(
+                @"HKEY_CURRENT_USER\Software\Microsoft\Windows\Shell\Associations\UrlAssociations\http\UserChoice",
+                "ProgId",
+                ""
+            );
+            if (value != null) progId = value.ToString().ToLowerInvariant();
+        }
+        catch { }
+
+        if (progId.Contains("chrome"))
+        {
+            string chrome = FindChrome();
+            if (chrome != null) return chrome;
+        }
+        if (progId.Contains("edge"))
+        {
+            string edge = FindEdge();
+            if (edge != null) return edge;
+        }
+        return FindChrome() ?? FindEdge();
+    }
+
     private static bool OpenUrl()
     {
+        // Open a dedicated app window so Chrome/Edge does not restore the
+        // user's homepage or previous tabs alongside the editor.
+        string browser = FindChromiumBrowser();
+        if (browser != null)
+        {
+            try
+            {
+                string profile = Path.Combine(
+                    Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData),
+                    "Hoi4MapEditor",
+                    "browser-profile"
+                );
+                Directory.CreateDirectory(profile);
+                ProcessStartInfo app = new ProcessStartInfo(browser);
+                app.Arguments =
+                    "--app=\"" + EditorUrl + "\" " +
+                    "--user-data-dir=\"" + profile + "\" " +
+                    "--no-first-run --no-default-browser-check";
+                app.UseShellExecute = false;
+                app.CreateNoWindow = true;
+                Process process = Process.Start(app);
+                if (process != null) return true;
+            }
+            catch { }
+        }
+
         try
         {
             ProcessStartInfo info = new ProcessStartInfo(EditorUrl);
