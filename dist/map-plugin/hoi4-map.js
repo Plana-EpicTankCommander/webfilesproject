@@ -1184,6 +1184,11 @@ class q {
       for (const [d, o] of a)
         t.lineWidth = d * n / s, t.strokeStyle = o, t.stroke(this.coastPath);
     }
+    for (const n of this.data.countries) {
+      if (n.hidden) continue;
+      const a = this.countryPaths.get(n.code);
+      a && (t.fillStyle = n.color, t.fill(a));
+    }
     for (const [n, a] of this.fillGroups)
       t.fillStyle = n, t.fill(a);
     this.hiddenProvincePath && (t.fillStyle = "rgba(155, 160, 152, 0.055)", t.fill(this.hiddenProvincePath), t.setLineDash([3 / s, 3 / s]), t.lineWidth = 0.7 / s, t.strokeStyle = "rgba(210, 196, 168, 0.24)", t.stroke(this.hiddenProvincePath), t.setLineDash([])), this.detailBorderPath && s > this.fitScale * 1.55 && (t.lineWidth = 0.55 / s, t.strokeStyle = "rgba(18, 15, 11, 0.42)", t.stroke(this.detailBorderPath)), this.divisionBorderPath && (t.lineWidth = 0.7 / s, t.strokeStyle = "rgba(18, 15, 11, 0.52)", t.stroke(this.divisionBorderPath)), this.coastPath && (t.lineWidth = 1.25 / s, t.strokeStyle = "rgba(7, 7, 5, 0.95)", t.stroke(this.coastPath)), this.borderPath && (t.lineWidth = 1.55 / s, t.strokeStyle = "rgba(22, 16, 10, 0.93)", t.stroke(this.borderPath), t.lineWidth = 0.55 / s, t.strokeStyle = "rgba(238, 215, 168, 0.10)", t.stroke(this.borderPath));

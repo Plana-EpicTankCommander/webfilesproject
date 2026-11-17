@@ -1200,6 +1200,18 @@ export class Hoi4Map {
 
     // Division fills. Colours are shared across countries, so this collapses to
     // a few dozen Path2D fills instead of thousands of individual paths.
+    // Countries are assembled from different admin sources (Natural Earth
+    // Admin-1 plus geoBoundaries Admin-2 for the Russian Far East). Their
+    // coastlines can differ by a thin sliver. Paint the country boundary first
+    // so those slivers read as the country's color instead of ocean.
+    for (const country of this.data.countries) {
+      if (country.hidden) continue
+      const path = this.countryPaths.get(country.code)
+      if (!path) continue
+      ctx.fillStyle = country.color
+      ctx.fill(path)
+    }
+
     for (const [color, path] of this.fillGroups) {
       ctx.fillStyle = color
       ctx.fill(path)
