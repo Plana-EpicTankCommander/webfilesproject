@@ -16,13 +16,13 @@ import { fileURLToPath } from 'node:url'
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..')
 const CACHE = path.join(ROOT, '.map-cache')
 const BASE = path.join(CACHE, 'world-divisions-cities.geojson')
-const USA = path.join(CACHE, 'gb-usa-adm2-simplified.geojson')
-const RUS = path.join(CACHE, 'gb-rus-adm2-simplified.geojson')
+const RUS_ADM1 = path.join(CACHE, 'gb-rus-adm1-simplified.geojson')
+const RUS_ADM2 = path.join(CACHE, 'gb-rus-adm2-simplified.geojson')
 const OUT = path.join(CACHE, 'world-divisions-usru.geojson')
 
 const base = JSON.parse(fs.readFileSync(BASE, 'utf8'))
-const usa = JSON.parse(fs.readFileSync(USA, 'utf8'))
-const rus = JSON.parse(fs.readFileSync(RUS, 'utf8'))
+const rusAdmin1 = JSON.parse(fs.readFileSync(RUS_ADM1, 'utf8'))
+const rusAdmin2 = JSON.parse(fs.readFileSync(RUS_ADM2, 'utf8'))
 
 const usStates = base.features.filter((feature) => feature.properties.adm0_a3 === 'USA')
 const stateGeometries = usStates.map((feature) => feature.geometry)
@@ -107,20 +107,35 @@ function insideUsState(feature) {
 // Official Far Eastern Federal District. Buryatia and Zabaykalsky were added
 // to the district in 2018.
 const FAR_EAST = new Set([
-  'Buryat',
-  'Chita',
-  'Amur',
-  'Yevrey',
-  'Khabarovsk',
-  "Primor'ye",
-  'Maga Buryatdan',
-  'Sakhalin',
-  'Chukchi Autonomous Okrug',
-  'Sakha (Yakutia)',
-  'Kamchatka'
+  'Buryatia',
+  'Zabaykalsky Krai',
+  'Amur Oblast',
+  'Jewish Autonomous Oblast',
+  'Khabarovsk Krai',
+  'Primorsky Krai',
+  'Magadan Oblast',
+  'Sakhalin Oblast',
+  'Chukotka Autonomous Okrug',
+  'Sakha Republic',
+  'Kamchatka Krai'
 ])
 
-const allRuStates = base.features.filter((feature) => feature.properties.adm0_a3 === 'RUS')
+const neRuStates = base.features.filter((feature) => feature.properties.adm0_a3 === 'RUS')
+const allRuStates = rusAdmin1.features.map((feature) => {
+  const properties = feature.properties
+  const name = properties.shapeName
+  const center = geometryCenter(feature.geometry)
+  const ne = neRuStates.find((state) => pointInGeometry(center, state.geometry))
+  return {
+    ...feature,
+    properties: {
+      adm0_a3: 'RUS',
+      adm1_code: `RUS-${properties.shapeID || name}`,
+      name,
+      name_zh: ne?.properties.name_zh || name
+    }
+  }
+})
 const farEastStates = allRuStates.filter((feature) => FAR_EAST.has(feature.properties.name))
 const stateBBoxesAll = allRuStates.map((feature) => ({
   feature,
@@ -152,12 +167,13 @@ function parentOf(feature) {
   return best
 }
 
-const ruRaions = rus.features
+const ruRaions = rusAdmin2.features
   .filter((feature) => feature.properties.shapeGroup === 'RUS')
   .filter((feature) => FAR_EAST.has(parentOf(feature)?.properties.name))
-const rest = base.features.filter((feature) => (
-  feature.properties.adm0_a3 !== 'RUS' || !FAR_EAST.has(feature.properties.name)
-))
+const rest = [
+  ...base.features.filter((feature) => feature.properties.adm0_a3 !== 'RUS'),
+  ...allRuStates.filter((feature) => !FAR_EAST.has(feature.properties.name))
+]
 
 function unwrapRing(ring) {
   const out = [[ring[0][0], ring[0][1]]]
