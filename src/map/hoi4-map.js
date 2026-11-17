@@ -8,8 +8,8 @@
 import { MAP_CSS } from './map-styles.js'
 
 export const DEFAULT_MAP_SRC = 'https://raw.githubusercontent.com/Plana-EpicTankCommander/sth_ineed/main/maps/world-map.json'
-const MAX_ZOOM = 32
-const MIN_ZOOM = 1
+const MAX_ZOOM = 45
+const MIN_ZOOM = 0.5
 const GRID_COLUMNS = 56
 
 const DEFAULTS = {
@@ -950,7 +950,7 @@ export class Hoi4Map {
     }
     const minus = this.root.querySelector('[data-action="zoom-out"]')
     const plus = this.root.querySelector('[data-action="zoom-in"]')
-    if (minus) minus.disabled = this.scale <= this.fitScale * 1.001
+    if (minus) minus.disabled = this.scale <= this.fitScale * MIN_ZOOM * 1.001
     if (plus) plus.disabled = this.scale >= this.fitScale * MAX_ZOOM * 0.999
   }
 
@@ -1596,9 +1596,9 @@ export class Hoi4Map {
     if (event.deltaMode === 1) delta *= 16
     else if (event.deltaMode === 2) delta *= this.viewH
 
-    // Already at the whole-world view and scrolling down: give the wheel back
-    // to the article so readers can keep moving.
-    if (this.scale <= this.fitScale * 1.001 && delta > 0) return
+    // At the maximum zoom-out, give the wheel back to the article so readers
+    // can keep moving; above that, allow zooming out toward 50%.
+    if (this.scale <= this.fitScale * MIN_ZOOM * 1.001 && delta > 0) return
     event.preventDefault()
     const point = this.canvasPoint(event.clientX, event.clientY)
     const factor = Math.exp(-delta * 0.0015)

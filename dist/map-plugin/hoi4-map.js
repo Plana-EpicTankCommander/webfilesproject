@@ -1,5 +1,5 @@
 /*! hoi4-map · HOI4-style interactive atlas · Natural Earth 1:10m */
-const E = `
+const O = `
 :host {
   display: block;
   position: relative;
@@ -549,7 +549,7 @@ const T = {
   data: null,
   interactive: !0
 }, k = /* @__PURE__ */ new Map();
-function O(c = {}) {
+function E(c = {}) {
   return { ...T, ...c };
 }
 function D(c) {
@@ -590,7 +590,7 @@ function R(c) {
     t += c[s], e += c[s + 1], i.push([t, e]);
   return i;
 }
-async function q(c, t) {
+async function N(c, t) {
   if (k.has(c)) {
     const i = k.get(c);
     return i instanceof Promise, i;
@@ -626,10 +626,10 @@ async function q(c, t) {
     throw k.delete(c), i;
   }
 }
-class N {
+class q {
   constructor(t, e = {}) {
     if (!t) throw new Error("Hoi4Map 需要一个容器元素");
-    this.host = t, this.options = O(e), this.src = this.options.src || W, this.explicitHeightPx = A(this.options.height), this.destroyed = !1, this.ready = !1, this.data = null, this.pendingReveal = !1, this.viewW = 1, this.viewH = 1, this.dpr = 1, this.fitScale = 1, this.scale = 1, this.tx = 0, this.ty = 0, this.snapMargin = 0, this.pointers = /* @__PURE__ */ new Map(), this.drag = null, this.pinch = null, this.dragging = !1, this.hoverDivision = null, this.hoverCountry = null, this.selectedCountry = null, this.fastRaf = 0, this.qualityRaf = 0, this.settleTimer = 0, this.hintTimer = 0, this.arcs = [], this.fillGroups = /* @__PURE__ */ new Map(), this.countryPathCache = /* @__PURE__ */ new Map(), this.grid = null, this.labelCountries = [], this.bound = {
+    this.host = t, this.options = E(e), this.src = this.options.src || W, this.explicitHeightPx = A(this.options.height), this.destroyed = !1, this.ready = !1, this.data = null, this.pendingReveal = !1, this.viewW = 1, this.viewH = 1, this.dpr = 1, this.fitScale = 1, this.scale = 1, this.tx = 0, this.ty = 0, this.snapMargin = 0, this.pointers = /* @__PURE__ */ new Map(), this.drag = null, this.pinch = null, this.dragging = !1, this.hoverDivision = null, this.hoverCountry = null, this.selectedCountry = null, this.fastRaf = 0, this.qualityRaf = 0, this.settleTimer = 0, this.hintTimer = 0, this.arcs = [], this.fillGroups = /* @__PURE__ */ new Map(), this.countryPathCache = /* @__PURE__ */ new Map(), this.grid = null, this.labelCountries = [], this.bound = {
       pointerDown: (i) => this.onPointerDown(i),
       pointerMove: (i) => this.onPointerMove(i),
       pointerUp: (i) => this.onPointerUp(i),
@@ -657,7 +657,7 @@ class N {
   // ---------------------------------------------------------------------------
   setupDom() {
     this.host.style.display = this.host.style.display || "block", this.host.style.width = F(this.options.width), this.root = this.host.shadowRoot || this.host.attachShadow({ mode: "open" }), this.root.innerHTML = `
-      <style>${E}</style>
+      <style>${O}</style>
       <div class="hm-frame" data-busy="true">
         <canvas class="hm-canvas" tabindex="0" role="application" aria-label="可缩放的世界政治地图"></canvas>
         <div class="hm-grain"></div>
@@ -761,7 +761,7 @@ class N {
     if (!this.destroyed) {
       this.ready = !1, this.frame.dataset.busy = "true", this.loading.hidden = !1, this.loading.classList.remove("is-done"), this.errorBox.hidden = !0, this.progressBar.style.width = "0%", this.loadingPercent.textContent = "0%";
       try {
-        const t = await q(this.src, (e) => {
+        const t = await N(this.src, (e) => {
           if (this.destroyed) return;
           const i = Math.round(e * 100);
           this.progressBar.style.width = `${i}%`, this.loadingPercent.textContent = `${i}%`;
@@ -951,7 +951,7 @@ class N {
     if (this.mapCanvas || (this.mapCanvas = document.createElement("canvas")), this.mapCanvas.width = Math.max(1, a), this.mapCanvas.height = Math.max(1, d), this.mapCtx = this.mapCanvas.getContext("2d"), this.snapshot = null, this.buildOcean(), this.ready && this.data) {
       if (this.fitScale = this.computeFitScale(), e > 0 && i > 0) {
         const o = i / e;
-        this.scale = f(this.fitScale * o, this.fitScale * 1, this.fitScale * 32), this.tx = this.viewW / 2 - l * this.scale, this.ty = this.viewH / 2 - n * this.scale;
+        this.scale = f(this.fitScale * o, this.fitScale * 0.5, this.fitScale * 45), this.tx = this.viewW / 2 - l * this.scale, this.ty = this.viewH / 2 - n * this.scale;
       } else
         this.scale = this.fitScale, this.tx = (this.viewW - this.data.meta.width * this.scale) / 2, this.ty = (this.viewH - this.data.meta.height * this.scale) / 2;
       this.clampTransform(), this.updateToolbar(), this.invalidateQuality();
@@ -986,8 +986,8 @@ class N {
     const t = Number(this.options.zoom) || 0, e = this.options.focus;
     if (e)
       this.focusOn(e, t || 2.6);
-    else if (t > 1) {
-      this.scale = f(this.fitScale * t, this.fitScale * 1, this.fitScale * 32);
+    else if (t > 0.5) {
+      this.scale = f(this.fitScale * t, this.fitScale * 0.5, this.fitScale * 45);
       const i = this.contentBounds();
       this.tx = this.viewW / 2 - (i[0] + i[2]) / 2 * this.scale, this.ty = this.viewH / 2 - (i[1] + i[3]) / 2 * this.scale, this.clampTransform();
     } else
@@ -1010,20 +1010,20 @@ class N {
     if (!i)
       return this.resetView(!1), !1;
     const [s, r, l, n] = i.bbox, a = i._labelCenter || i.label, d = Number.isFinite(a?.[0]) ? a[0] : (s + l) / 2, o = Number.isFinite(a?.[1]) ? a[1] : (r + n) / 2, h = Math.max(l - s, n - r);
-    let p = Math.max(1.2, Math.min(32, e));
+    let p = Math.max(1.2, Math.min(45, e));
     if (h > 0 && h < 220) {
       const g = Math.min(this.viewW, this.viewH) * 0.5 / (h * this.fitScale);
-      p = Math.max(p, f(g, 2.6, 32));
+      p = Math.max(p, f(g, 2.6, 45));
     }
     const m = f(
       this.fitScale * p,
-      this.fitScale * 1,
-      this.fitScale * 32
+      this.fitScale * 0.5,
+      this.fitScale * 45
     );
     return this.scale = m, this.tx = this.viewW / 2 - d * m, this.ty = this.viewH / 2 - o * m, this.clampTransform(), this.updateToolbar(), this.invalidateFast(), this.scheduleQuality(100), !0;
   }
   setView({ focus: t = "", zoom: e = 0 } = {}) {
-    return t ? this.focusOn(t, Number(e) || 2.6) : Number(e) > 1 ? (this.scale = f(this.fitScale * Number(e), this.fitScale * 1, this.fitScale * 32), this.tx = this.viewW / 2 - this.data.meta.width * this.scale / 2, this.ty = this.viewH / 2 - this.data.meta.height * this.scale / 2, this.clampTransform(), this.updateToolbar(), this.invalidateFast(), this.scheduleQuality(100), !0) : (this.resetView(), !0);
+    return t ? this.focusOn(t, Number(e) || 2.6) : Number(e) > 1 ? (this.scale = f(this.fitScale * Number(e), this.fitScale * 0.5, this.fitScale * 45), this.tx = this.viewW / 2 - this.data.meta.width * this.scale / 2, this.ty = this.viewH / 2 - this.data.meta.height * this.scale / 2, this.clampTransform(), this.updateToolbar(), this.invalidateFast(), this.scheduleQuality(100), !0) : (this.resetView(), !0);
   }
   clampTransform() {
     if (!this.data) return;
@@ -1032,7 +1032,7 @@ class N {
   }
   zoomAt(t, e, i) {
     if (!this.ready) return;
-    const s = f(t, this.fitScale * 1, this.fitScale * 32);
+    const s = f(t, this.fitScale * 0.5, this.fitScale * 45);
     if (Math.abs(s - this.scale) < 1e-9) return;
     const r = (e - this.tx) / this.scale, l = (i - this.ty) / this.scale;
     this.scale = s, this.tx = e - r * s, this.ty = i - l * s, this.clampTransform(), this.updateToolbar(), this.invalidateFast(), this.scheduleQuality(180), this.dismissHint();
@@ -1042,7 +1042,7 @@ class N {
     const t = this.fitScale ? Math.round(this.scale / this.fitScale * 100) : 100;
     this.zoomLabel.textContent = `${t}%`, this.frame.dataset.zoomed = this.scale > this.fitScale * 1.01 ? "true" : "false", this.canvas && (this.canvas.style.touchAction = this.scale > this.fitScale * 1.01 ? "none" : "pan-y");
     const e = this.root.querySelector('[data-action="zoom-out"]'), i = this.root.querySelector('[data-action="zoom-in"]');
-    e && (e.disabled = this.scale <= this.fitScale * 1.001), i && (i.disabled = this.scale >= this.fitScale * 32 * 0.999);
+    e && (e.disabled = this.scale <= this.fitScale * 0.5 * 1.001), i && (i.disabled = this.scale >= this.fitScale * 45 * 0.999);
   }
   updateChrome() {
     if (!this.data) return;
@@ -1326,8 +1326,8 @@ class N {
     if (this.pointers.set(t.pointerId, { x: t.clientX, y: t.clientY }), this.pointers.size === 2 && this.pinch) {
       const [e, i] = [...this.pointers.values()], s = Math.hypot(e.x - i.x, e.y - i.y) || 1, r = (e.x + i.x) / 2, l = (e.y + i.y) / 2, n = f(
         this.pinch.scale * (s / this.pinch.distance),
-        this.fitScale * 1,
-        this.fitScale * 32
+        this.fitScale * 0.5,
+        this.fitScale * 45
       ), a = this.canvas.getBoundingClientRect(), d = this.pinch.midX - a.left, o = this.pinch.midY - a.top, h = (d - this.pinch.tx) / this.pinch.scale, p = (o - this.pinch.ty) / this.pinch.scale;
       this.scale = n, this.tx = r - a.left - h * n, this.ty = l - a.top - p * n, this.clampTransform(), this.updateToolbar(), this.invalidateFast(), this.scheduleQuality(220);
       return;
@@ -1376,7 +1376,7 @@ class N {
     if (!this.ready || !this.options.interactive) return;
     this.dismissHint();
     let e = t.deltaY;
-    if (t.deltaMode === 1 ? e *= 16 : t.deltaMode === 2 && (e *= this.viewH), this.scale <= this.fitScale * 1.001 && e > 0) return;
+    if (t.deltaMode === 1 ? e *= 16 : t.deltaMode === 2 && (e *= this.viewH), this.scale <= this.fitScale * 0.5 * 1.001 && e > 0) return;
     t.preventDefault();
     const i = this.canvasPoint(t.clientX, t.clientY), s = Math.exp(-e * 15e-4);
     this.zoomAt(this.scale * s, i.x, i.y), this.updateHover(t);
@@ -1502,7 +1502,7 @@ class I extends HTMLElement {
     if (this._map) return;
     this.style.display = this.style.display || "block";
     const t = this.getAttribute("src") || W, e = Number(this.getAttribute("zoom"));
-    this._map = new N(this, {
+    this._map = new q(this, {
       src: t,
       height: this.getAttribute("height") || "520px",
       width: this.getAttribute("width") || "100%",
@@ -1577,7 +1577,7 @@ function G(c = "hoi4-map") {
 }
 G();
 export {
-  N as Hoi4Map,
+  q as Hoi4Map,
   I as Hoi4MapElement,
   G as defineHoi4Map
 };
