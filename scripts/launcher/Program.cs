@@ -3,6 +3,7 @@ using System.Diagnostics;
 using System.IO;
 using System.Net;
 using System.Net.Sockets;
+using System.Runtime.InteropServices;
 using System.Text;
 using System.Threading;
 using Microsoft.Win32;
@@ -253,10 +254,13 @@ internal static class Program
                     "--app=\"" + EditorUrl + "\" " +
                     "--user-data-dir=\"" + profile + "\" " +
                     "--no-first-run --no-default-browser-check";
-                app.UseShellExecute = false;
-                app.CreateNoWindow = true;
+                app.UseShellExecute = true;
                 Process process = Process.Start(app);
-                if (process != null) return true;
+                if (process != null)
+                {
+                    BringToFront(process);
+                    return true;
+                }
             }
             catch { }
         }
@@ -266,7 +270,11 @@ internal static class Program
             ProcessStartInfo info = new ProcessStartInfo(EditorUrl);
             info.UseShellExecute = true;
             Process process = Process.Start(info);
-            if (process != null) return true;
+            if (process != null)
+            {
+                BringToFront(process);
+                return true;
+            }
         }
         catch { }
 
@@ -284,6 +292,59 @@ internal static class Program
         catch
         {
             return false;
+        }
+    }
+
+    [DllImport("user32.dll")]
+    private static extern bool SetForegroundWindow(IntPtr hWnd);
+
+    [DllImport("user32.dll")]
+    private static extern bool ShowWindow(IntPtr hWnd, int nCmdShow);
+
+    [DllImport("user32.dll")]
+    private static extern bool SetWindowPos(
+        IntPtr hWnd, IntPtr hWndInsertAfter, int x, int y, int cx, int cy, uint flags
+    );
+
+    [DllImport("user32.dll")]
+    private static extern void SwitchToThisWindow(IntPtr hWnd, bool altTab);
+
+    [DllImport("user32.dll")]
+    private static extern bool AllowSetForegroundWindow(int processId);
+
+    private static readonly IntPtr HWND_TOPMOST = new IntPtr(-1);
+    private static readonly IntPtr HWND_NOTOPMOST = new IntPtr(-2);
+    private const uint SWP_NOSIZE = 0x0001;
+    private const uint SWP_NOMOVE = 0x0002;
+    private const uint SWP_SHOWWINDOW = 0x0040;
+
+    private static void BringToFront(Process process)
+    {
+        for (int i = 0; i < 30; i++)
+        {
+            try
+            {
+                process.Refresh();
+                IntPtr handle = process.MainWindowHandle;
+                if (handle != IntPtr.Zero)
+                {
+                    AllowSetForegroundWindow(-1);
+                    ShowWindow(handle, 9);
+                    SetWindowPos(
+                        handle, HWND_TOPMOST, 0, 0, 0, 0,
+                        SWP_NOMOVE | SWP_NOSIZE | SWP_SHOWWINDOW
+                    );
+                    SetForegroundWindow(handle);
+                    SwitchToThisWindow(handle, true);
+                    SetWindowPos(
+                        handle, HWND_NOTOPMOST, 0, 0, 0, 0,
+                        SWP_NOMOVE | SWP_NOSIZE | SWP_SHOWWINDOW
+                    );
+                    return;
+                }
+            }
+            catch { }
+            Thread.Sleep(200);
         }
     }
 
