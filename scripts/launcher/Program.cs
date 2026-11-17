@@ -119,9 +119,16 @@ internal static class Program
 
     private static void WaitAndOpen()
     {
+        bool portReady = false;
         for (int i = 0; i < 160; i++)
         {
-            if (IsReady())
+            bool httpReady = IsReady();
+            if (!portReady && PortInUse()) portReady = true;
+
+            // Prefer the real HTTP response, but fall back to an open port after
+            // a short grace period (some systems/proxies make the HEAD/GET check
+            // unreliable while the browser itself still works).
+            if (httpReady || (portReady && i >= 10))
             {
                 Console.WriteLine("  本地服务已就绪。");
                 if (!noOpen)
@@ -136,6 +143,7 @@ internal static class Program
             }
             Thread.Sleep(300);
         }
+        Console.WriteLine("  [提示] 本地服务启动超时，请手动访问：" + EditorUrl);
     }
 
     private static bool IsReady()
