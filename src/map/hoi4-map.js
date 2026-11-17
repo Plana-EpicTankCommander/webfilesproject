@@ -577,11 +577,13 @@ export class Hoi4Map {
       if (detailArcs.size) this.detailBorderPath = this.pathFromArcList([...detailArcs])
     }
     this.countryPaths = new Map()
+    this.countryFillPaths = new Map()
     for (const country of data.countries) {
       country._labelCenter = this.computeCountryCenter(country)
       if (country.hidden) continue
       const path = this.pathFromArcList(country.arcs || [])
       this.countryPaths.set(country.code, path)
+      this.countryFillPaths.set(country.code, this.pathFromArcRings(country.arcs || []))
     }
   }
 
@@ -679,6 +681,57 @@ export class Hoi4Map {
       if (!arc || arc.length < 2) continue
       path.moveTo(arc[0][0], arc[0][1])
       for (let i = 1; i < arc.length; i++) path.lineTo(arc[i][0], arc[i][1])
+    }
+    return path
+  }
+
+  pathFromArcRings(indices) {
+    const path = new Path2D()
+    const edges = []
+    for (const ref of indices) {
+      const index = ref < 0 ? ~ref : ref
+      const arc = this.arcs[index]
+      if (!arc || arc.length < 2) continue
+      const points = ref < 0 ? [...arc].reverse() : arc
+      const first = points[0]
+      const last = points[points.length - 1]
+      edges.push({
+        points,
+        a: `${first[0]},${first[1]}`,
+        b: `${last[0]},${last[1]}`
+      })
+    }
+
+    const byPoint = new Map()
+    for (const edge of edges) {
+      for (const key of [edge.a, edge.b]) {
+        if (!byPoint.has(key)) byPoint.set(key, [])
+        byPoint.get(key).push(edge)
+      }
+    }
+
+    const used = new Set()
+    for (const first of edges) {
+      if (used.has(first)) continue
+      const startKey = first.a
+      let currentKey = startKey
+      let edge = first
+      path.moveTo(edge.points[0][0], edge.points[0][1])
+
+      while (edge) {
+        used.add(edge)
+        const points = edge.a === currentKey ? edge.points : [...edge.points].reverse()
+        for (let i = 1; i < points.length; i++) {
+          path.lineTo(points[i][0], points[i][1])
+        }
+        currentKey = edge.a === currentKey ? edge.b : edge.a
+        if (currentKey === startKey) break
+        edge = (byPoint.get(currentKey) || []).find((candidate) => !used.has(candidate))
+      }
+
+      // Closing the ring is what keeps Canvas from filling the open arc as a
+      // triangle across the ocean.
+      path.closePath()
     }
     return path
   }
@@ -1206,10 +1259,10 @@ export class Hoi4Map {
     // so those slivers read as the country's color instead of ocean.
     for (const country of this.data.countries) {
       if (country.hidden) continue
-      const path = this.countryPaths.get(country.code)
+      const path = this.countryFillPaths.get(country.code)
       if (!path) continue
       ctx.fillStyle = country.color
-      ctx.fill(path)
+      ctx.fill(path, 'evenodd')
     }
 
     for (const [color, path] of this.fillGroups) {
