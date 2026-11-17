@@ -52,11 +52,7 @@ npm run dev
 sth_ineed/maps/<id>-map.json
 ```
 
-文章里写：
-
-```markdown
-[map:<id>;h:560;title:标题]
-```
+导出的 JSON 只作为独立地图数据使用；本站已不再内置网页地图插件。
 
 ## 说明
 

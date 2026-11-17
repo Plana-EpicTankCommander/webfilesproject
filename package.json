@@ -6,11 +6,10 @@
   "scripts": {
     "dev": "vite",
     "dev:editor": "node scripts/editor-server.mjs",
-    "build": "vite build && npm run build:map-plugin",
+    "build": "vite build",
     "build:map-data": "node scripts/build-map-data.mjs && node scripts/merge-hong-kong.mjs",
     "merge:hk": "node scripts/merge-hong-kong.mjs",
     "build:map-region": "node scripts/build-region-map.mjs east-asia",
-    "build:map-plugin": "vite build --config vite.map.config.js",
     "preview": "vite preview"
   },
   "dependencies": {

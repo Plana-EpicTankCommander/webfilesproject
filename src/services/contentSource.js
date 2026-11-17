@@ -27,12 +27,6 @@ const REPO_CONFIG = {
     repo: 'sth_ineed',
     branch: 'main',
     baseDir: 'musics'
-  },
-  maps: {
-    owner: 'Plana-EpicTankCommander',
-    repo: 'sth_ineed',
-    branch: 'main',
-    baseDir: 'maps'
   }
 }
 
@@ -275,63 +269,9 @@ export async function resolveCanvasMarkers(html, markdownPath) {
   return result
 }
 
-// ---------- 地图标记：[map:world;h:560;w:100;focus:CHN;zoom:2.6;title:说明] ----------
-
-const MAP_MARKER_RE = /\[map:([^\]]+)\]/g
-
-function parseMapMarker(content) {
-  const parts = content.split(';')
-  const mapId = parts[0]?.trim() || 'world'
-
-  const options = {}
-  for (const part of parts.slice(1)) {
-    const index = part.indexOf(':')
-    if (index <= 0) continue
-    options[part.slice(0, index).trim().toLowerCase()] = part.slice(index + 1).trim()
-  }
-
-  const parsedHeight = parseInt(options.h, 10)
-  const parsedWidth = parseInt(options.w, 10)
-  const parsedZoom = parseFloat(options.zoom)
-
-  return {
-    mapId,
-    height: Number.isFinite(parsedHeight) ? Math.min(1200, Math.max(240, parsedHeight)) : 540,
-    width: Number.isFinite(parsedWidth) ? Math.min(100, Math.max(20, parsedWidth)) : 100,
-    title: options.title || '',
-    focus: (options.focus || '').toUpperCase(),
-    zoom: Number.isFinite(parsedZoom) ? Math.min(32, Math.max(1, parsedZoom)) : 0,
-    fit: options.fit === 'cover' ? 'cover' : 'contain',
-    showGraticule: ['on', 'true', '1'].includes(String(options.graticule || '').toLowerCase())
-  }
-}
-
-// 把 [map:...] 标记替换成占位 div，交给 Article 页面挂载 MapCanvas 组件
-export async function resolveMapMarkers(html) {
-  const matches = [...html.matchAll(MAP_MARKER_RE)]
-  if (matches.length === 0) return html
-
-  // 地图 JSON 放在内容仓库 sth_ineed/maps/ 下，和文章一起维护。
-  let result = html
-  for (const match of matches) {
-    const marker = parseMapMarker(match[1])
-    const mapSrc = getMapUrl(marker.mapId)
-    const host = `<div class="map-embed-host"`
-      + ` style="width:${marker.width}%;margin:1.7rem auto;"`
-      + ` data-map-id="${escapeHtmlAttribute(marker.mapId)}"`
-      + ` data-map-src="${escapeHtmlAttribute(mapSrc)}"`
-      + ` data-map-height="${marker.height}px"`
-      + ` data-map-title="${escapeHtmlAttribute(marker.title)}"`
-      + ` data-map-focus="${escapeHtmlAttribute(marker.focus)}"`
-      + ` data-map-zoom="${marker.zoom}"`
-      + ` data-map-fit="${marker.fit}"`
-      + ` data-map-graticule="${marker.showGraticule}"`
-      + `></div>`
-    result = result.replace(match[0], () => host)
-  }
-  // 独立成行的标记会被 marked 包进 <p>；把占位块取出，避免 block 元素嵌在段落里。
-  result = result.replace(/<p>\s*(<div class="map-embed-host"[\s\S]*?<\/div>)\s*<\/p>/g, '$1')
-  return result
+// 地图插件已从本站移除；旧文章里的地图标记直接去掉，避免露出原始文本。
+export function stripMapMarkers(html) {
+  return html.replace(/\[map:[^\]]+\]/g, '')
 }
 
 // ---------- 弹窗图片标记：[popup:图片.png;text:点我看图;title:说明] ----------
@@ -537,15 +477,6 @@ export function getMusicUrl(section, path) {
   const config = REPO_CONFIG[section]
   const baseDir = config.baseDir ? config.baseDir + '/' : ''
   return `${GITHUB_RAW}/${config.owner}/${config.repo}/${config.branch}/${baseDir}${path}`
-}
-
-// 地图数据和文章放在同一个内容仓库：sth_ineed/maps/<id>-map.json
-export function getMapUrl(mapId = 'world') {
-  const config = REPO_CONFIG.maps
-  const safeId = /^[a-z0-9-]+$/i.test(mapId) ? mapId : 'world'
-  // Pin maps to the last good data commit while the raw CDN flushes its cache.
-  const mapRef = '805d7db'
-  return `${GITHUB_RAW}/${config.owner}/${config.repo}/${mapRef}/${config.baseDir}/${safeId}-map.json`
 }
 
 export function getPdfRawUrl(path) {

@@ -148,34 +148,6 @@
 
       <details class="doc">
         <summary>
-          <Icon name="map" :size="16" />
-          <span class="doc-title">插入可交互地图</span>
-          <Icon name="chevron-down" :size="15" class="doc-caret" />
-        </summary>
-        <div class="doc-body">
-          <p>单独占一行写地图标记，渲染成可缩放、拖动、悬停与点击的 HOI4 风格世界地图：</p>
-          <pre><code>[map:world]
-[map:world;h:560;w:100;focus:CHN;zoom:2.6;fit:contain;title:世界政治地图]</code></pre>
-          <table>
-            <thead>
-              <tr><th>参数</th><th>含义</th><th>默认</th></tr>
-            </thead>
-            <tbody>
-              <tr><td><code>h</code></td><td>地图高度（240–1200 px）</td><td>540</td></tr>
-              <tr><td><code>w</code></td><td>地图宽度百分比（20–100）</td><td>100</td></tr>
-              <tr><td><code>focus</code></td><td>初始聚焦的国家代码 / 行政区编号</td><td>无</td></tr>
-              <tr><td><code>zoom</code></td><td>初始缩放倍数</td><td>全图</td></tr>
-              <tr><td><code>fit</code></td><td><code>contain</code> 完整显示 / <code>cover</code> 铺满</td><td>contain</td></tr>
-              <tr><td><code>graticule</code></td><td>写 <code>on</code> 显示经纬网</td><td>不显示</td></tr>
-              <tr><td><code>title</code></td><td>标题牌文字；<code>none</code> 隐藏</td><td>数据标题</td></tr>
-            </tbody>
-          </table>
-          <p>地图只描国界和海岸线，不画一级行政区边界；每个行政区的颜色来自内容仓库的 <code>sth_ineed/maps/world-map.json</code>。独立网页可使用 <code>&lt;hoi4-map&gt;</code> 组件，详见仓库 README。</p>
-        </div>
-      </details>
-
-      <details class="doc">
-        <summary>
           <Icon name="file" :size="16" />
           <span class="doc-title">插入 PDF</span>
           <Icon name="chevron-down" :size="15" class="doc-caret" />

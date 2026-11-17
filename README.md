@@ -33,7 +33,6 @@
 | `[popup:图片.png;text:点我看图]` | 行内按钮，点击弹出灯箱 |
 | `[music:歌名.mp3;title:标题]` | 内嵌音轨卡片，交给底部播放器 |
 | `[canvas:图片.png;h:520;fit:cover]` | 可缩放 / 平移的画布 |
-| `[map:world;h:560;focus:CHN]` | 可缩放 / 平移的 HOI4 风格世界地图 |
 | 把 `.pdf` 放进 `novels/` 子目录 | 章节列表出现 PDF，点开直接阅读 |
 | 直接贴 `<iframe src="…">` | 内嵌视频 / 网页 |
 
@@ -91,54 +90,15 @@
 
 交互：滚轮以鼠标位置为中心缩放、拖动平移、双击放大/复位，键盘聚焦后支持 `+` / `-` / `0` 与方向键。
 
-### 🗺️ 插入可交互地图
+### 🗺️ 地图插件已移除
 
-在文稿里单独占一行写：
+本站不再内置可交互地图，构建产物中也不再包含 `hoi4-map.js` 或地图演示页。旧文章里的 `[map:...]` 标记会被直接忽略，不会显示原始文本。
 
-```
-[map:world]
-[map:world;h:560;w:100;focus:CHN;zoom:2.6;fit:contain;title:世界政治地图]
-```
-
-| 参数 | 含义 | 默认 |
-|------|------|------|
-| `world` / `east-asia` | 地图数据 id；对应 `sth_ineed/maps/<id>-map.json` | `world` |
-| `h` | 地图高度（px，240~1200） | `540` |
-| `w` | 地图宽度百分比（20~100） | `100` |
-| `focus` | 初始聚焦：三位国家代码（如 `CHN`）或行政区编号（如 `CHN011`） | 无 |
-| `zoom` | 初始缩放倍数；配合 `focus` 可只给某个国家 | `0`（全图） |
-| `fit` | `contain` 完整显示 / `cover` 铺满画布 | `contain` |
-| `graticule` | 写 `on` 显示经纬网；默认不显示 | `off` |
-| `title` | 标题牌文字；写 `none` 可隐藏 | 数据里的标题 |
-
-交互：滚轮以指针位置为中心缩放，单指 / 鼠标拖动平移，双指捏合，双击放大或复位；悬停显示行政区名称，点击国家打开信息卡。键盘聚焦后支持 `+` / `-` / `0` / 方向键 / `Esc`。
-
-地图外观是低饱和政治色 + 暗色海面 + 细金线 + 纸纹。**默认同一国家使用纯色填充**，不显示行政区色差；需要色块时给组件加 `show-province-shading="true"`。网页只描海岸线与国界，不描任何一级行政区或市级边界；市级数据仅用于悬停、点击和本地编辑。缩放时线宽保持屏幕像素级，不会跟着地图一起变粗。
-
-地图数据不在本站的构建产物里，而是和文章一起放在内容仓库 `sth_ineed/maps/`，由前端通过 `raw.githubusercontent.com` 读取。当前提供：
-
-- `world-map.json`：全球地图，250 国家 / 5,128 行政区；中国大陆 366 个市级 / 省直辖县级单元，美国为 51 个州级单位，俄罗斯远东为 231 个区级地块、其余为联邦主体，香港为单一行政区
-- `east-asia-map.json`：东亚区域（中国、香港、澳门、日本、韩国、朝鲜、蒙古、台湾），486 行政区，文章写 `[map:east-asia]` 即可
-
-**在其他网页里使用**：执行 `npm run build` 后，把 `dist/map-plugin/hoi4-map.js` 放到静态站点即可；地图 JSON 直接使用内容仓库的 raw 地址（也可以下载后自建副本）：
-
-```html
-<script type="module" src="./map-plugin/hoi4-map.js"></script>
-
-<hoi4-map
-  src="https://raw.githubusercontent.com/Plana-EpicTankCommander/sth_ineed/main/maps/world-map.json"
-  height="560"
-  title="世界政治地图"
-  focus="CHN"
-  zoom="2.6"
-></hoi4-map>
-```
-
-可用属性：`src`、`height`、`width`、`title`、`subtitle`、`focus`、`zoom`、`fit`、`show-title`、`show-compass`、`show-graticule`、`show-province-shading`；不写 `src` 时默认读取 `sth_ineed/maps/world-map.json`。地图内部是 Shadow DOM，不会和页面样式打架。完整示例见仓库根目录的 `map-demo.html`（构建后访问 `/map-demo.html`）。
+地图数据和本地编辑器仍然保留在仓库中，但只作为独立工具使用，不会被网站加载。
 
 ### 🧰 地图编辑器
 
-`map-generator/` 是一个**仅本地使用**的地图编辑工具：载入东亚 / 世界底图后，点选省份把它划入当前国家，颜色、国界和标签实时更新，导出的 JSON 带完整几何，可直接给网站插件使用。
+`map-generator/` 是一个**仅本地使用**的地图编辑工具：载入东亚 / 世界底图后，点选省份把它划入当前国家，颜色、国界和标签实时更新，导出的 JSON 带完整几何，可交给外部地图工具使用。
 
 Windows 下可以直接双击仓库根目录的 [`启动地图编辑器.bat`](启动地图编辑器.bat)：它只启动地图编辑器自己的静态服务，不会启动整站 Vite，也不需要安装 npm 依赖，随后会自动打开编辑器。关闭时在窗口按 `Ctrl+C` 或直接关闭窗口。
 
@@ -199,11 +159,10 @@ npm run dev:editor
 │   │   ├── article/         ChapterTree.vue  FloatingToc.vue
 │   │   ├── gallery/         Lightbox.vue
 │   │   ├── layout/          SideNav.vue  MobileTabBar.vue
-│   │   ├── map/             MapCanvas.vue（文章内挂载用 Vue 包装）
 │   │   ├── player/          PlayerBar.vue  InlineTrack.vue
 │   │   ├── ui/              Icon.vue
 │   │   └── ImageCanvas/     ImageCanvas.vue
-│   ├── map/                 hoi4-map.js（引擎）  hoi4-map-element.js（Web Component）  map-styles.js
+│   ├── map/                 hoi4-map.js 与 map-styles.js（仅地图编辑器使用）
 │   ├── composables/         useTheme.js
 │   ├── services/            contentSource.js（GitHub 取数与标记解析）
 │   ├── stores/              player.js
@@ -213,12 +172,11 @@ npm run dev:editor
 │   └── site.js              站点名、导航、仓库地址等常量
 ├── scripts/build-map-data.mjs    从 Natural Earth 生成 world-map.json
 ├── scripts/build-region-map.mjs  从世界数据裁剪区域地图
-├── map-demo.html            地图插件独立演示页（含网页 / 文章两种插入方式）
 ├── .github/workflows/       deploy-aweb.yml（把 dist 同步到 aweb）
 └── dist/                    构建产物（提交到仓库，供部署）
 ```
 
-> 地图基础数据不在本仓库的 `public/` 下，而是和文章一起放在内容仓库 `sth_ineed/maps/`。
+> 地图基础数据不在本仓库的 `public/` 下，而是和文章一起放在内容仓库 `sth_ineed/maps/`，仅供本地地图编辑器使用，网站不会加载它。
 
 ## 地图数据格式
 
@@ -260,13 +218,13 @@ npm run build:map-region  # 生成 .map-cache/east-asia-map.json
 ```bash
 npm install     # 安装依赖
 npm run dev     # 开发服务器，默认 http://localhost:5173
-npm run build   # 构建站点 + 生成 dist/map-plugin/hoi4-map.js
+npm run build   # 构建站点
 npm run preview # 本地预览构建产物
 ```
 
 部署链路：推送到 `main` 后，`.github/workflows/deploy-aweb.yml` 会把 `dist/` 同步到 `Plana-EpicTankCommander/aweb` 仓库，由 GitHub Pages 对外提供。
 
-> 因为部署直接取 `dist/`，**改完源码一定要 `npm run build` 并把 `dist/` 一起提交**，否则线上还是旧版本。独立插件 `dist/map-plugin/hoi4-map.js` 也由构建生成，需一并提交。
+> 因为部署直接取 `dist/`，**改完源码一定要 `npm run build` 并把 `dist/` 一起提交**，否则线上还是旧版本。
 
 ## 数据来源
 

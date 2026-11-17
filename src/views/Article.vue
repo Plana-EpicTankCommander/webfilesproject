@@ -159,7 +159,6 @@ import ChapterTree from '../components/article/ChapterTree.vue'
 import FloatingToc from '../components/article/FloatingToc.vue'
 import Lightbox from '../components/gallery/Lightbox.vue'
 import ImageCanvas from '../components/ImageCanvas/ImageCanvas.vue'
-import MapCanvas from '../components/map/MapCanvas.vue'
 import InlineTrack from '../components/player/InlineTrack.vue'
 import {
   listFiles,
@@ -168,7 +167,7 @@ import {
   replaceMarkdownImageUrls,
   resolveCanvasMarkers,
   resolvePopupMarkers,
-  resolveMapMarkers,
+  stripMapMarkers,
   getPdfRawUrl,
   itemMusicUrl
 } from '../services/contentSource'
@@ -325,7 +324,7 @@ async function loadContent(item, scroll = true) {
     html = await replaceMarkdownImageUrls(html, item.path)
     html = await resolveCanvasMarkers(html, item.path)
     html = await resolvePopupMarkers(html, item.path)
-    html = await resolveMapMarkers(html)
+    html = stripMapMarkers(html)
     html = await resolveMusicMarkers(html)
     htmlContent.value = html
     loading.value = false
@@ -495,23 +494,6 @@ function mountEmbeds() {
       alt: host.dataset.canvasAlt || '',
       height: host.dataset.canvasHeight || '420px',
       fitMode: host.dataset.canvasFit || 'contain'
-    })
-    app.mount(host)
-    mountedApps.push(app)
-  })
-
-  root.querySelectorAll('.map-embed-host').forEach((host) => {
-    if (!host.dataset.mapSrc) return
-    const zoom = Number(host.dataset.mapZoom)
-    const app = createApp(MapCanvas, {
-      src: host.dataset.mapSrc,
-      height: host.dataset.mapHeight || '540px',
-      width: 100,
-      title: host.dataset.mapTitle || '',
-      focus: host.dataset.mapFocus || '',
-      zoom: Number.isFinite(zoom) ? zoom : 0,
-      fit: host.dataset.mapFit || 'contain',
-      showGraticule: host.dataset.mapGraticule === 'true'
     })
     app.mount(host)
     mountedApps.push(app)
