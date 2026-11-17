@@ -10,7 +10,6 @@
 - **📄 PDF** — 在页面内直接阅读，不依赖第三方阅读器；支持下载
 - **🖼️ 图片** — 网格画廊，点击进入灯箱：缩放平移、左右键切换、缩略图条、新窗口看原图
 - **🎨 画布** — 文章里可以把图片放进固定画布，滚轮缩放、拖动平移、双击复位，始终不会拖出画布
-- **🗺️ 地图** — 可缩放 / 拖动的 HOI4 风格世界政治地图；按 250 个国家、4,928 个行政区组织数据，网页只描国界与海岸线，基础数据全部装在单个 JSON 里
 - **🎵 音乐** — 全局底部播放器，列表循环 / 单曲 / 随机、音量记忆；文章内嵌音轨与「声音」页共用同一个队列
 - **📊 状态** — 数据源连通性测试、API 限额说明与文章标记语法速查
 
@@ -90,31 +89,6 @@
 
 交互：滚轮以鼠标位置为中心缩放、拖动平移、双击放大/复位，键盘聚焦后支持 `+` / `-` / `0` 与方向键。
 
-### 🗺️ 地图插件已移除
-
-本站不再内置可交互地图，构建产物中也不再包含 `hoi4-map.js` 或地图演示页。旧文章里的 `[map:...]` 标记会被直接忽略，不会显示原始文本。
-
-地图数据和本地编辑器仍然保留在仓库中，但只作为独立工具使用，不会被网站加载。
-
-### 🧰 地图编辑器
-
-`map-generator/` 是一个**仅本地使用**的地图编辑工具：载入东亚 / 世界底图后，点选省份把它划入当前国家，颜色、国界和标签实时更新，导出的 JSON 带完整几何，可交给外部地图工具使用。
-
-Windows 下可以直接双击仓库根目录的 [`启动地图编辑器.bat`](启动地图编辑器.bat)：它只启动地图编辑器自己的静态服务，不会启动整站 Vite，也不需要安装 npm 依赖，随后会自动打开编辑器。关闭时在窗口按 `Ctrl+C` 或直接关闭窗口。
-
-也可以手动启动编辑器专用服务：
-
-```bash
-npm run dev:editor
-# http://127.0.0.1:5173/map-generator/
-```
-
-`npm run dev` 仍然用于开发整个站点，不会由编辑器启动器调用。
-
-支持选择 / 新增国家、点击地图分配省份、在删除模式下把地块从国家中剔除并撤销、删除整个国家 tag 及其地块、修改国家名称与颜色、按国家开关是否在地图上渲染，以及进入批量模式后一次性显示 / 隐藏或设置多个国家的颜色。隐藏只影响绘制，隐藏国家的省份会以淡色虚线轮廓显示，仍可悬停、点击、分配或删除；隐藏或显示国家后，地图会自动缩放到当前可见范围。省份色差默认关闭，可在编辑器里开启。被隐藏的国家不会写进导出文件。详细说明见 `map-generator/README.md`。
-
-> 这个工具**不参与 `npm run build`**，不会被打包进 `dist/`，也不会部署到线上。
-
 ### 📄 插入 PDF
 
 把 `.pdf` 丢进 `novels/` 的任意子目录即可，章节列表会自动识别并打上 `PDF` 标签，点击后直接在页面里阅读，工具条里也有「下载」。
@@ -146,7 +120,6 @@ npm run dev:editor
 - Pinia 只做一件事：全局播放器状态（`src/stores/player.js`）
 - 目录列表：优先读取内容仓库里的静态 `manifest.json`（GitHub Action 生成），取不到才回退 GitHub API（未登录 60 次/小时）
 - `raw.githubusercontent.com`：获取正文 / 图片 / 音频 / PDF，绕过 API 限额
-- 地图：原生 Canvas 2D + Path2D + Shadow DOM，不依赖地图库；单文件量化拓扑 JSON，快慢双速渲染（拖动时变换快照，停下后重绘矢量细节）
 - 无 UI 框架、无图标库、无 CSS 预处理器；入口 chunk + 按页懒加载
 
 ## 目录结构
@@ -162,7 +135,6 @@ npm run dev:editor
 │   │   ├── player/          PlayerBar.vue  InlineTrack.vue
 │   │   ├── ui/              Icon.vue
 │   │   └── ImageCanvas/     ImageCanvas.vue
-│   ├── map/                 hoi4-map.js 与 map-styles.js（仅地图编辑器使用）
 │   ├── composables/         useTheme.js
 │   ├── services/            contentSource.js（GitHub 取数与标记解析）
 │   ├── stores/              player.js
@@ -170,47 +142,8 @@ npm run dev:editor
 │   ├── views/               Home / Article / Image / Sound / Status / Dev
 │   ├── router/              index.js
 │   └── site.js              站点名、导航、仓库地址等常量
-├── scripts/build-map-data.mjs    从 Natural Earth 生成 world-map.json
-├── scripts/build-region-map.mjs  从世界数据裁剪区域地图
 ├── .github/workflows/       deploy-aweb.yml（把 dist 同步到 aweb）
 └── dist/                    构建产物（提交到仓库，供部署）
-```
-
-> 地图基础数据不在本仓库的 `public/` 下，而是和文章一起放在内容仓库 `sth_ineed/maps/`，仅供本地地图编辑器使用，网站不会加载它。
-
-## 地图数据格式
-
-`sth_ineed/maps/world-map.json` 是全球地图数据，`east-asia-map.json` 是东亚区域子集。两者结构完全相同，都是**混合缩进**的可读 JSON：`meta`、`countries`、`divisions` 逐字段换行，`arcs` / `graticule` 每 12 个数字换一行，而不是压缩成一行。顶层字段：
-
-| 字段 | 含义 |
-|------|------|
-| `meta` | 标题、投影、量化后的世界宽高、国家数、行政区数、来源与许可 |
-| `countries[]` | 国家：三位字母数字代码 `code`、英文名 `name`、中文名 `nameZh`、国家色 `color`、标签锚点 `label`、包围盒 `bbox`、面积 `area`、国界弧段 `arcs`、下辖行政区编号 `divisions` |
-| `divisions[]` | 行政区：`id`（国家代码 + 三位序号，如 `CHN001`）、`country`、`name` / `nameZh`、该行政区颜色 `color`、`polygons` |
-| `arcs[]` | 共享边界弧段，量化后按 `[x, y, dx, dy, …]` 增量编码 |
-| `coast[]` / `borders[]` | 需要描边的海岸线 / 国界弧段索引；行政区内部弧段不在其中 |
-| `graticule[]` | 10° 经纬网，格式同 `arcs` |
-
-`polygons` 的结构是「多边形 → 环 → 有符号弧段引用」：
-
-```json
-"polygons": [[[12, -34, 35], [40, 41]]]
-```
-
-- 正数表示正向使用 `arcs[i]`，负数表示反向使用（`~i`，与 TopoJSON 一致）
-- 相邻行政区共用弧段，因此简化不会把地块撕开；渲染时默认只描 `coast` / `borders`
-- 颜色是预制在 JSON 里的十六进制值；网页默认按国家纯色填充，只改省份色不会改变网页显示
-
-数据由 `scripts/build-map-data.mjs` 生成，区域地图再由 `scripts/build-region-map.mjs` 裁剪：
-
-```bash
-# 首次需要下载 Natural Earth 1:10m 数据到 .map-cache/（见脚本顶部 URL）
-npm run build:map-data    # 生成 .map-cache/world-map.json
-npm run build:map-region  # 生成 .map-cache/east-asia-map.json
-
-# 然后复制到内容仓库并提交：
-#   sth_ineed/maps/world-map.json
-#   sth_ineed/maps/east-asia-map.json
 ```
 
 ## 开发与部署
@@ -233,14 +166,13 @@ npm run preview # 本地预览构建产物
 | 文章 / PDF | `Plana-EpicTankCommander/sth_ineed` | `novels/` |
 | 图片 | `Plana-EpicTankCommander/sth_ineed` | `images/` |
 | 音乐 | `Plana-EpicTankCommander/sth_ineed` | `musics/` |
-| 地图数据 | `Plana-EpicTankCommander/sth_ineed` | `maps/world-map.json` 与 `maps/east-asia-map.json` |
 
 > 内容清单：`sth_ineed` 仓库里的 GitHub Action 会在 `novels/`、`images/`、`musics/` 变更时生成根目录的 `manifest.json`。前端优先读取这份静态清单（不消耗 API 额度），读不到时自动回退到 GitHub API。
 
 ## 注意事项
 
 - GitHub API 未认证上限 60 次/小时，按 IP 计算；已加 2 分钟列表缓存。触发限流时页面会显示提示和「重试」按钮
-- 图片、音乐、PDF、地图都走 `raw.githubusercontent.com`，不消耗 API 额度
+- 图片、音乐、PDF 都走 `raw.githubusercontent.com`，不消耗 API 额度
 - 播放器默认音量 10%，音量与循环模式记在 localStorage
-- 文章内的图片/音乐/画布/地图标记只在 `novels/` 下的 Markdown 中生效，路径大小写敏感
+- 文章内的图片/音乐/画布标记只在 `novels/` 下的 Markdown 中生效，路径大小写敏感
 - 图标文件名被浏览器缓存得比较死，换图标后线上可能需要强刷（Ctrl+F5）才更新

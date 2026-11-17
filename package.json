@@ -5,11 +5,7 @@
   "type": "module",
   "scripts": {
     "dev": "vite",
-    "dev:editor": "node scripts/editor-server.mjs",
     "build": "vite build",
-    "build:map-data": "node scripts/build-map-data.mjs && node scripts/merge-hong-kong.mjs",
-    "merge:hk": "node scripts/merge-hong-kong.mjs",
-    "build:map-region": "node scripts/build-region-map.mjs east-asia",
     "preview": "vite preview"
   },
   "dependencies": {
