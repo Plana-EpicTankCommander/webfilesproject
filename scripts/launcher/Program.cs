@@ -256,11 +256,8 @@ internal static class Program
                     "--no-first-run --no-default-browser-check";
                 app.UseShellExecute = true;
                 Process process = Process.Start(app);
-                if (process != null)
-                {
-                    BringToFront(process);
-                    return true;
-                }
+                if (process != null && BringToFront(process)) return true;
+                Console.WriteLine("  应用窗口没有出现，尝试默认浏览器...");
             }
             catch { }
         }
@@ -275,6 +272,19 @@ internal static class Program
                 BringToFront(process);
                 return true;
             }
+        }
+        catch { }
+
+        try
+        {
+            ProcessStartInfo fallback = new ProcessStartInfo(
+                "cmd.exe",
+                "/d /s /c start \"\" \"" + EditorUrl + "\""
+            );
+            fallback.UseShellExecute = false;
+            fallback.CreateNoWindow = true;
+            Process process = Process.Start(fallback);
+            if (process != null) return true;
         }
         catch { }
 
@@ -318,9 +328,9 @@ internal static class Program
     private const uint SWP_NOMOVE = 0x0002;
     private const uint SWP_SHOWWINDOW = 0x0040;
 
-    private static void BringToFront(Process process)
+    private static bool BringToFront(Process process)
     {
-        for (int i = 0; i < 30; i++)
+        for (int i = 0; i < 50; i++)
         {
             try
             {
@@ -340,12 +350,13 @@ internal static class Program
                         handle, HWND_NOTOPMOST, 0, 0, 0, 0,
                         SWP_NOMOVE | SWP_NOSIZE | SWP_SHOWWINDOW
                     );
-                    return;
+                    return true;
                 }
             }
             catch { }
             Thread.Sleep(200);
         }
+        return false;
     }
 
     private static void Pause()
