@@ -486,6 +486,7 @@ export class Hoi4Map {
       data.countries.filter((country) => country.hidden).map((country) => country.code)
     )
     const visibleArcs = new Set()
+    const hiddenProvincePath = new Path2D()
 
     for (const division of data.divisions) {
       const rings = this.ringsForDivision(division)
@@ -512,6 +513,8 @@ export class Hoi4Map {
             for (const ref of refs) visibleArcs.add(ref < 0 ? ~ref : ref)
           }
         }
+      } else {
+        hiddenProvincePath.addPath(path)
       }
 
       const col0 = clamp(Math.floor((bbox[0] - data.meta.width * 0) / grid.cell), 0, grid.cols - 1)
@@ -528,6 +531,7 @@ export class Hoi4Map {
 
     this.grid = grid
     this.byDivision = byDivision
+    this.hiddenProvincePath = hiddenProvincePath
     this.labelCountries = data.countries
       .filter((country) => !country.hidden)
       .sort((a, b) => b.area - a.area)
@@ -1199,6 +1203,18 @@ export class Hoi4Map {
     for (const [color, path] of this.fillGroups) {
       ctx.fillStyle = color
       ctx.fill(path)
+    }
+
+    // Hidden countries are not part of the political fill, but their provinces
+    // remain pickable. Show a faint, dashed ghost so the user can aim at them.
+    if (this.hiddenProvincePath) {
+      ctx.fillStyle = 'rgba(155, 160, 152, 0.055)'
+      ctx.fill(this.hiddenProvincePath)
+      ctx.setLineDash([3 / scale, 3 / scale])
+      ctx.lineWidth = 0.7 / scale
+      ctx.strokeStyle = 'rgba(210, 196, 168, 0.24)'
+      ctx.stroke(this.hiddenProvincePath)
+      ctx.setLineDash([])
     }
 
     if (this.detailBorderPath && scale > this.fitScale * 1.55) {
