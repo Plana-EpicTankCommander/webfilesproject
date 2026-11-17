@@ -3,9 +3,9 @@
  * Build the combined Admin-1/Admin-2 source used for the detailed world map.
  *
  * - Keep all existing divisions (including China's city-level units and HK).
- * - Replace USA and RUS Admin-1 with geoBoundaries Admin-2 features.
- * - US counties outside the 50 states + DC (e.g. Puerto Rico/territories) are
- *   dropped by testing their centroid against the existing US state polygons.
+ * - Keep US states and most Russian federal subjects as Admin-1.
+ * - Replace only the Russian Far Eastern federal subjects with geoBoundaries
+ *   Admin-2 raions, identified by the parent federal-subject polygon.
  *
  * The result is fed through mapshaper and build-map-data.mjs.
  */
@@ -104,9 +104,60 @@ function insideUsState(feature) {
   ))
 }
 
-const usCounties = usa.features.filter(insideUsState)
-const ruRaions = rus.features.filter((feature) => feature.properties.shapeGroup === 'RUS')
-const rest = base.features.filter((feature) => feature.properties.adm0_a3 !== 'RUS')
+// Official Far Eastern Federal District. Buryatia and Zabaykalsky were added
+// to the district in 2018.
+const FAR_EAST = new Set([
+  'Buryat',
+  'Chita',
+  'Amur',
+  'Yevrey',
+  'Khabarovsk',
+  "Primor'ye",
+  'Maga Buryatdan',
+  'Sakhalin',
+  'Chukchi Autonomous Okrug',
+  'Sakha (Yakutia)',
+  'Kamchatka'
+])
+
+const allRuStates = base.features.filter((feature) => feature.properties.adm0_a3 === 'RUS')
+const farEastStates = allRuStates.filter((feature) => FAR_EAST.has(feature.properties.name))
+const stateBBoxesAll = allRuStates.map((feature) => ({
+  feature,
+  bbox: geometryBBox(feature.geometry)
+}))
+
+function bboxOverlap(a, b) {
+  const width = Math.max(0, Math.min(a[2], b[2]) - Math.max(a[0], b[0]))
+  const height = Math.max(0, Math.min(a[3], b[3]) - Math.max(a[1], b[1]))
+  return width * height
+}
+
+function parentOf(feature) {
+  const center = geometryCenter(feature.geometry)
+  const hit = allRuStates.find((state) => pointInGeometry(center, state.geometry))
+  if (hit) return hit
+
+  // Coastal/dateline raions can have a vertex-average center in the water.
+  const bbox = geometryBBox(feature.geometry)
+  let best = null
+  let bestArea = 0
+  for (const state of stateBBoxesAll) {
+    const area = bboxOverlap(bbox, state.bbox)
+    if (area > bestArea) {
+      bestArea = area
+      best = state.feature
+    }
+  }
+  return best
+}
+
+const ruRaions = rus.features
+  .filter((feature) => feature.properties.shapeGroup === 'RUS')
+  .filter((feature) => FAR_EAST.has(parentOf(feature)?.properties.name))
+const rest = base.features.filter((feature) => (
+  feature.properties.adm0_a3 !== 'RUS' || !FAR_EAST.has(feature.properties.name)
+))
 
 function unwrapRing(ring) {
   const out = [[ring[0][0], ring[0][1]]]
@@ -275,7 +326,8 @@ function asDivisions(feature, code, prefix) {
   })
 }
 
-// The USA keeps its original Admin-1 states. Only Russia is replaced here.
+// The USA keeps its original Admin-1 states; Russian non-Far-East subjects do
+// too. Only the Far East is replaced by raions.
 const preparedRest = rest
 
 const features = [
@@ -286,6 +338,7 @@ const features = [
 fs.writeFileSync(OUT, `${JSON.stringify({ type: 'FeatureCollection', features })}\n`, 'utf8')
 console.log({
   total: features.length,
+  farEastStates: farEastStates.length,
   ruRaions: ruRaions.length,
   output: OUT
 })
