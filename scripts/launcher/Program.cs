@@ -1,6 +1,7 @@
 using System;
 using System.Diagnostics;
 using System.IO;
+using System.Net;
 using System.Net.Sockets;
 using System.Text;
 using System.Threading;
@@ -116,14 +117,44 @@ internal static class Program
 
     private static void WaitAndOpen()
     {
-        for (int i = 0; i < 120; i++)
+        for (int i = 0; i < 160; i++)
         {
-            if (PortInUse())
+            if (IsReady())
             {
-                if (!noOpen) OpenUrl();
+                Console.WriteLine("  本地服务已就绪。");
+                if (!noOpen)
+                {
+                    Console.WriteLine("  正在打开浏览器...");
+                    if (!OpenUrl())
+                    {
+                        Console.WriteLine("  [提示] 浏览器没有自动打开，请手动访问：" + EditorUrl);
+                    }
+                }
                 return;
             }
-            Thread.Sleep(500);
+            Thread.Sleep(300);
+        }
+    }
+
+    private static bool IsReady()
+    {
+        try
+        {
+            HttpWebRequest request = (HttpWebRequest)WebRequest.Create(EditorUrl);
+            request.Method = "GET";
+            request.Timeout = 1200;
+            request.ReadWriteTimeout = 1200;
+            request.AllowAutoRedirect = true;
+            request.Proxy = null;
+            using (HttpWebResponse response = (HttpWebResponse)request.GetResponse())
+            {
+                int status = (int)response.StatusCode;
+                return status >= 200 && status < 500;
+            }
+        }
+        catch
+        {
+            return false;
         }
     }
 
@@ -145,15 +176,32 @@ internal static class Program
         }
     }
 
-    private static void OpenUrl()
+    private static bool OpenUrl()
     {
         try
         {
             ProcessStartInfo info = new ProcessStartInfo(EditorUrl);
             info.UseShellExecute = true;
-            Process.Start(info);
+            Process process = Process.Start(info);
+            if (process != null) return true;
         }
         catch { }
+
+        try
+        {
+            ProcessStartInfo fallback = new ProcessStartInfo(
+                "rundll32.exe",
+                "url.dll,FileProtocolHandler " + EditorUrl
+            );
+            fallback.UseShellExecute = false;
+            fallback.CreateNoWindow = true;
+            Process.Start(fallback);
+            return true;
+        }
+        catch
+        {
+            return false;
+        }
     }
 
     private static void Pause()
