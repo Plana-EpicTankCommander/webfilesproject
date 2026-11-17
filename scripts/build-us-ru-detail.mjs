@@ -106,7 +106,7 @@ function insideUsState(feature) {
 
 const usCounties = usa.features.filter(insideUsState)
 const ruRaions = rus.features.filter((feature) => feature.properties.shapeGroup === 'RUS')
-const rest = base.features.filter((feature) => !['USA', 'RUS'].includes(feature.properties.adm0_a3))
+const rest = base.features.filter((feature) => feature.properties.adm0_a3 !== 'RUS')
 
 function unwrapRing(ring) {
   const out = [[ring[0][0], ring[0][1]]]
@@ -275,18 +275,17 @@ function asDivisions(feature, code, prefix) {
   })
 }
 
-const preparedRest = rest.flatMap((feature) => splitDatelineFeature(clipDatelineFeature(feature)))
+// The USA keeps its original Admin-1 states. Only Russia is replaced here.
+const preparedRest = rest
 
 const features = [
   ...preparedRest,
-  ...usCounties.flatMap((feature) => asDivisions(feature, 'USA', 'USA')),
   ...ruRaions.flatMap((feature) => asDivisions(feature, 'RUS', 'RUS'))
 ]
 
 fs.writeFileSync(OUT, `${JSON.stringify({ type: 'FeatureCollection', features })}\n`, 'utf8')
 console.log({
   total: features.length,
-  usCounties: usCounties.length,
   ruRaions: ruRaions.length,
   output: OUT
 })
